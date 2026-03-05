@@ -184,7 +184,7 @@
 .cutoff-slider #unity-dragger {
     width: 20px;
     height: 20px;
-    background-color: rgb(132, 238, 0);
+    background-color: rgb(194, 194, 194);
     border-left-color: rgb(12, 12, 12);
     border-right-color: rgb(12, 12, 12);
     border-top-color: rgb(12, 12, 12);
@@ -245,10 +245,6 @@
     border-right-color: rgb(0, 0, 0);
     border-top-color: rgb(0, 0, 0);
     border-bottom-color: rgb(0, 0, 0);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
     border-bottom-left-radius: 14px;
@@ -260,6 +256,10 @@
     -unity-font-style: normal;
     margin-bottom: 0;
     margin-top: 2px;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
 }
 
 .mode-toggle-row {
@@ -275,23 +275,31 @@
     border-right-color: rgb(0, 0, 0);
     border-top-color: rgb(0, 0, 0);
     border-bottom-color: rgb(0, 0, 0);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-right-radius: 28px;
+    border-bottom-left-radius: 28px;
 }
 
 .mode-toggle-label {
     color: rgb(0, 0, 0);
     font-size: 28px;
     min-width: 110px;
-    -unity-text-align: middle-center;
     -unity-font-definition: url("project://database/Assets/Art/Fonts/segoeui.ttf?fileID=12800000&guid=56ef884df9fd65242b49937f4dfb4252&type=3#segoeui");
     -unity-font-style: normal;
+    -unity-text-align: middle-center;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
 }
 
 .mode-toggle .unity-text-element {
@@ -301,7 +309,7 @@
 .mode-toggle .unity-toggle__input {
     width: 52px;
     height: 28px;
-    background-color: rgb(48, 48, 48);
+    background-color: rgb(128, 128, 128);
     border-left-color: rgb(48, 48, 48);
     border-right-color: rgb(48, 48, 48);
     border-top-color: rgb(48, 48, 48);
@@ -355,15 +363,18 @@
     border-right-color: rgb(0, 0, 0);
     border-top-color: rgb(0, 0, 0);
     border-bottom-color: rgb(0, 0, 0);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
     -unity-text-align: middle-center;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
-    border-bottom-left-radius: 16px;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    align-content: stretch;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-right-radius: 24px;
+    border-bottom-left-radius: 24px;
+    align-items: flex-end;
+    justify-content: center;
 }
 
 #LevelSelector.is-open #LevelSelectorButton.level-selector-button {
@@ -377,7 +388,6 @@
     right: 0;
     bottom: 48px;
     max-height: 240px;
-    background-color: rgb(52, 52, 52);
     border-left-color: rgb(78, 78, 78);
     border-right-color: rgb(78, 78, 78);
     border-top-color: rgb(78, 78, 78);
@@ -386,13 +396,14 @@
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
     overflow: hidden;
-    display: flex;
-    margin-bottom: 16px;
-    border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    margin-bottom: 2px;
+    display: none;
+    background-color: rgb(91, 91, 91);
 }
 
 #LevelSelectorMenu .unity-scroll-view__content-container {
@@ -544,7 +555,7 @@
     min-height: 48px;
     padding-top: 0;
     padding-bottom: 0;
-    background-color: rgb(52, 52, 52);
+    background-color: transparent;
     color: rgb(255, 255, 255);
     -unity-text-align: middle-center;
     border-left-width: 0;
@@ -556,4 +567,28 @@
 
 #LevelSelectorMenu .level-selector-option.is-last {
     border-bottom-width: 0;
+}
+
+.level-selector-arrow {
+    display: flex;
+    position: absolute;
+    right: 16px;
+    top: 12px;
+    min-width: 24px;
+    min-height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: rgb(128, 128, 128);
+    rotate: 0;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    -unity-text-align: middle-center;
+    font-size: 16px;
+    align-self: center;
+}
+
+#LevelSelector.is-open #Arrow.level-selector-arrow {
+    rotate: 180deg;
 }

@@ -7,11 +7,12 @@ using UnityEngine.UIElements;
 namespace Twinny.Mobile.Editor.Interactables
 {
     [CustomEditor(typeof(Floor))]
+    [CanEditMultipleObjects]
     public class FloorEditor : UnityEditor.Editor
     {
         private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uxml";
         private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uss";
-        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Camera/Icons/icons.png";
+        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Cameras/Icons/icons.png";
         private const string FloorIconName = "icons_5";
         private const string TitleFontPath = "Packages/com.twinny.twe26/Editor/SetupGuide/Resources/Fonts/DINNextLTPro-Condensed.otf";
         private const float SliderStep = 0.1f;
@@ -61,13 +62,13 @@ namespace Twinny.Mobile.Editor.Interactables
             SerializedProperty dataProp = serializedObject.FindProperty("_data");
             if (dataProp == null) return;
 
-            SerializedProperty nameProp = dataProp.FindPropertyRelative("<Name>k__BackingField");
-            SerializedProperty numberProp = dataProp.FindPropertyRelative("<Number>k__BackingField");
+            SerializedProperty titleProp = dataProp.FindPropertyRelative("<Title>k__BackingField");
+            SerializedProperty subtitleProp = dataProp.FindPropertyRelative("<Subtitle>k__BackingField");
             SerializedProperty immersionSceneProp = dataProp.FindPropertyRelative("<ImmersionSceneName>k__BackingField");
             SerializedProperty sceneOpenModeProp = dataProp.FindPropertyRelative("<SceneOpenMode>k__BackingField");
 
-            AddProperty(container, nameProp, serializedObject);
-            AddProperty(container, numberProp, serializedObject);
+            AddProperty(container, titleProp, serializedObject);
+            AddProperty(container, subtitleProp, serializedObject);
             AddProperty(container, immersionSceneProp, serializedObject);
 
             if (sceneOpenModeProp != null)
@@ -92,10 +93,13 @@ namespace Twinny.Mobile.Editor.Interactables
         {
             if (container == null) return;
 
-            AddProperty(container, serializedObject.FindProperty("_useFocusPoint"), serializedObject);
-            AddProperty(container, serializedObject.FindProperty("_focusPoint"), serializedObject);
-            AddSlider(container, "_targetRadius", 0.1f, 200f, "Target Radius");
+            SerializedProperty useFocusPointProp = serializedObject.FindProperty("_useFocusPoint");
+            SerializedProperty focusPointProp = serializedObject.FindProperty("_focusPoint");
+
             AddSlider(container, "_maxWallHeight", 0f, 20f, "Max Wall Height");
+            AddProperty(container, useFocusPointProp, serializedObject);
+            AddProperty(container, focusPointProp, serializedObject);
+            AddSlider(container, "_targetRadius", 0.1f, 200f, "Target Radius");
             AddProperty(container, serializedObject.FindProperty("_targetPositionOffset"), serializedObject);
             AddProperty(container, serializedObject.FindProperty("_targetRotationOffset"), serializedObject);
         }
@@ -110,6 +114,7 @@ namespace Twinny.Mobile.Editor.Interactables
         private void AddComputedInfo(VisualElement container)
         {
             if (container == null) return;
+            if (targets != null && targets.Length != 1) return;
             var floor = target as Floor;
             if (floor == null) return;
 
@@ -203,6 +208,7 @@ namespace Twinny.Mobile.Editor.Interactables
             label.AddToClassList("inline-note");
             container.Add(label);
         }
+
 
         private void ApplyHeroIcon(VisualElement root)
         {

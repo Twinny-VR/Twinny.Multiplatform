@@ -13,7 +13,7 @@
                     <ui:Button text="Gyro On" name="GyroToggleButton" class="gyro-toggle-button" style="display: none;"/>
                     <ui:VisualElement name="ModeLevelSelector" class="mode-level-selector">
                         <ui:VisualElement name="ModeToggleRow" class="mode-toggle-row" style="align-self: center; padding-top: 4px; padding-bottom: 6px; margin-bottom: 24px; border-top-left-radius: 24px; border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px; padding-left: 16px; padding-right: 16px; justify-content: center;">
-                            <ui:Label text="Maquete" name="ModeToggleLabelMockup" class="mode-toggle-label" style="-unity-text-align: upper-center;"/>
+                            <ui:Label text="Maquete" name="ModeToggleLabelMockup" class="mode-toggle-label"/>
                             <ui:Toggle label="" name="ModeToggle" class="mode-toggle" style="margin-right: 2px; margin-left: 2px; margin-top: 2px; margin-bottom: 2px; padding-top: 0; padding-right: 2px; padding-bottom: 2px; padding-left: 2px; align-self: center; top: 3px;"/>
                             <ui:Label text="Walk" name="ModeToggleLabelImmersive" class="mode-toggle-label"/>
                         </ui:VisualElement>

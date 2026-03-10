@@ -12,7 +12,7 @@ namespace Twinny.Mobile.Editor.Camera
     {
         private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uxml";
         private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uss";
-        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Camera/Icons/icons.png";
+        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Cameras/Icons/icons.png";
         private const string FpsIconName = "icons_1";
         private const string TitleFontPath = "Packages/com.twinny.twe26/Editor/SetupGuide/Resources/Fonts/DINNextLTPro-Condensed.otf";
         private const float SliderStep = 0.1f;
@@ -110,7 +110,7 @@ namespace Twinny.Mobile.Editor.Camera
             AddProperty(container, targetProp, "LookAtTarget", cameraSo);
             AddSlider(container, lensProp, "FieldOfView", 10f, 120f, "Field Of View");
             AddSlider(container, lensProp, "NearClipPlane", 0.01f, 5f, "Near Clip");
-            AddSlider(container, lensProp, "FarClipPlane", 10f, 5000f, "Far Clip");
+            AddSlider(container, lensProp, "FarClipPlane", 10f, 50000f, "Far Clip");
         }
 
         private void AddPanTiltFields(VisualElement container, CinemachinePanTilt panTilt)

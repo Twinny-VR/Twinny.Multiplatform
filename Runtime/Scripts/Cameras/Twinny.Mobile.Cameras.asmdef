@@ -21,6 +21,11 @@
             "name": "com.unity.cinemachine",
             "expression": "3.1.5",
             "define": "TWINNY_CAMERA"
+        },
+        {
+            "name": "com.unity.modules.physics",
+            "expression": "1.0.0",
+            "define": "CINEMACHINE_PHYSICS"
         }
     ],
     "noEngineReferences": false

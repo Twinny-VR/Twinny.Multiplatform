@@ -72,9 +72,24 @@ public static class WebGLGyroAPI
         float beta = GetGyroBeta();
         float gamma = GetGyroGamma();
 
-        return Quaternion.Euler(beta, -alpha, -gamma);
+        return ConvertBrowserRotation(alpha, beta, gamma);
 #else
         return Quaternion.identity;
 #endif
+    }
+
+    private static Quaternion ConvertBrowserRotation(float alpha, float beta, float gamma)
+    {
+        // Browser deviceorientation uses a portrait-centric frame:
+        // alpha = Z, beta = X, gamma = Y.
+        // Our mobile experience runs primarily in landscape, so pitch/roll need
+        // to be remapped or horizontal motion is interpreted as vertical and vice-versa.
+        bool isLandscape = Screen.width > Screen.height;
+
+        float pitch = isLandscape ? gamma : beta;
+        float yaw = -alpha;
+        float roll = isLandscape ? -beta : -gamma;
+
+        return Quaternion.Euler(pitch, yaw, roll);
     }
 }

@@ -289,9 +289,6 @@
     color: rgb(0, 0, 0);
     font-size: 28px;
     min-width: 110px;
-    -unity-font-definition: url("project://database/Assets/Art/Fonts/segoeui.ttf?fileID=12800000&guid=56ef884df9fd65242b49937f4dfb4252&type=3#segoeui");
-    -unity-font-style: normal;
-    -unity-text-align: middle-center;
     margin-top: 0;
     margin-right: 0;
     margin-bottom: 0;
@@ -300,6 +297,9 @@
     padding-right: 0;
     padding-bottom: 0;
     padding-left: 0;
+    -unity-text-align: upper-center;
+    -unity-font-definition: url("project://database/Packages/com.twinny.mobile/Samples/Widgets/Fonts/Core/segoeui%20SDF.asset?fileID=11400000&guid=1ab99b5107782f645a12acd9496797f9&type=2#segoeui SDF");
+    -unity-font-style: normal;
 }
 
 .mode-toggle .unity-text-element {
@@ -375,6 +375,7 @@
     border-bottom-left-radius: 24px;
     align-items: flex-end;
     justify-content: center;
+    -unity-font-definition: url("project://database/Packages/com.twinny.mobile/Samples/Widgets/Fonts/Core/segoeui%20SDF.asset?fileID=11400000&guid=1ab99b5107782f645a12acd9496797f9&type=2#segoeui SDF");
 }
 
 #LevelSelector.is-open #LevelSelectorButton.level-selector-button {
@@ -587,6 +588,10 @@
     -unity-text-align: middle-center;
     font-size: 16px;
     align-self: center;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
 }
 
 #LevelSelector.is-open #Arrow.level-selector-arrow {

@@ -226,13 +226,7 @@ namespace Twinny.Mobile.Samples
             if (cam == null) cam = FindAnyObjectByType<Camera>();
             if (cam == null) return;
 
-            if (!_selectedFloor.TryGetScreenRect(cam, out Rect screenRect))
-            {
-                SetFloorHintVisibility(false);
-                return;
-            }
-
-            Vector3 anchorScreen = cam.WorldToScreenPoint(_selectedFloor.TargetPosition);
+            Vector3 anchorScreen = cam.WorldToScreenPoint(_selectedFloor.FocusPoint.position);
             if (anchorScreen.z <= 0f)
             {
                 SetFloorHintVisibility(false);
@@ -241,7 +235,7 @@ namespace Twinny.Mobile.Samples
 
             SetFloorHintVisibility(true);
 
-            float x = screenRect.xMax + _floorHintScreenPadding;
+            float x = anchorScreen.x + _floorHintScreenPadding;
             float y = anchorScreen.y;
             Vector2 panelPos = RuntimePanelUtils.ScreenToPanel(_document.rootVisualElement.panel, new Vector2(x, y));
 
@@ -364,7 +358,7 @@ namespace Twinny.Mobile.Samples
             if (floorData == null)
                 return;
 
-            string value = floorData.Name?.Trim();
+            string value = floorData.Title?.Trim();
             if (_levelSelectorButton != null)
                 _levelSelectorButton.text = value;
 
@@ -413,7 +407,7 @@ namespace Twinny.Mobile.Samples
             _levelSelectorOptionButtons.Clear();
 
             List<FloorData> validFloors = _floorsData
-                .Where(floor => floor != null && !string.IsNullOrWhiteSpace(floor.Name))
+                .Where(floor => floor != null && !string.IsNullOrWhiteSpace(floor.Title))
                 .ToList();
 
             if (validFloors.Count == 0)
@@ -426,7 +420,7 @@ namespace Twinny.Mobile.Samples
             for (int i = 0; i < validFloors.Count; i++)
             {
                 FloorData floor = validFloors[i];
-                string floorName = floor.Name.Trim();
+                string floorName = floor.Title.Trim();
                 var optionButton = new Button(() => HandleLevelSelectorOptionClicked(floor))
                 {
                     text = floorName
@@ -440,7 +434,7 @@ namespace Twinny.Mobile.Samples
             }
 
             if (_levelSelectorButton != null)
-                _levelSelectorButton.text = validFloors[0].Name.Trim();
+                _levelSelectorButton.text = validFloors[0].Title.Trim();
         }
 
         private void SyncLevelSelectorWithLoadedScene(string loadedSceneName)
@@ -460,10 +454,10 @@ namespace Twinny.Mobile.Samples
                     System.StringComparison.OrdinalIgnoreCase
                 ));
 
-            if (matchedFloor == null || string.IsNullOrWhiteSpace(matchedFloor.Name))
+            if (matchedFloor == null || string.IsNullOrWhiteSpace(matchedFloor.Title))
                 return;
 
-            _levelSelectorButton.text = matchedFloor.Name.Trim();
+            _levelSelectorButton.text = matchedFloor.Title.Trim();
         }
 
         private void HandleStartClicked()

@@ -1,0 +1,10 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Packages/com.twinny.mobile/Samples/Widgets/Resources/WS_Label.uss?fileID=7433441132597879392&amp;guid=9977f53a37ff2c641be0519b631fcfeb&amp;type=3#WS_Label"/>
+    <ui:VisualElement name="WSLabelRoot" class="ws-label-root">
+        <ui:VisualElement name="WSLabelAccent" class="ws-label-accent"/>
+        <ui:VisualElement name="WSLabelText" class="ws-label-text">
+            <ui:Label text="Title" name="WSLabelTitle" class="ws-label-title" style="-unity-font-definition: url(&quot;project://database/Packages/com.twinny.mobile/Samples/Widgets/Fonts/Core/segoeui%20SDF.asset?fileID=11400000&amp;guid=1ab99b5107782f645a12acd9496797f9&amp;type=2#segoeui SDF&quot;);"/>
+            <ui:Label text="Tap to inspect" name="WSLabelSubtitle" class="ws-label-subtitle" style="-unity-font-definition: url(&quot;project://database/Packages/com.twinny.mobile/Samples/Widgets/Fonts/Core/segoeui%20SDF.asset?fileID=11400000&amp;guid=1ab99b5107782f645a12acd9496797f9&amp;type=2#segoeui SDF&quot;);"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

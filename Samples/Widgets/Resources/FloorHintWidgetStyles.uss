@@ -1,0 +1,109 @@
+.floor-hint-root {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(18, 18, 18, 0.86);
+    border-left-color: rgb(132, 238, 0);
+    border-right-color: rgb(132, 238, 0);
+    border-top-color: rgb(132, 238, 0);
+    border-bottom-color: rgb(132, 238, 0);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    padding-left: 10px;
+    padding-right: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    min-width: 240px;
+    max-width: 320px;
+    min-height: 56px;
+}
+
+.floor-hint-root.has-immersion {
+    cursor: pointer;
+}
+
+.floor-hint-text {
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.floor-hint-title {
+    color: rgb(240, 245, 248);
+    -unity-font-style: bold;
+    white-space: nowrap;
+    margin-top: 0;
+    margin-right: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    height: 15px;
+    font-size: 18px;
+    align-self: stretch;
+    margin-bottom: 2px;
+}
+
+.floor-hint-subtitle {
+    color: rgba(200, 220, 150, 0.95);
+    white-space: nowrap;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    font-size: 16px;
+    -unity-text-align: lower-left;
+    margin-top: 2px;
+}
+
+.floor-hint-icon {
+    min-width: 22px;
+    min-height: 22px;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    -unity-background-image-tint-color: rgb(132, 238, 0);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 1;
+    display: none;
+    width: 32px;
+    height: 32px;
+}
+
+.floor-hint-icon--immersive {
+    background-image: url("project://database/Packages/com.twinny.mobile/Samples/SceneTemplates/MobileStartScene/Sprites/UI_Sheet.png?fileID=-1364167185&guid=a2daaca17c893be489c7816c9a39a4cd&type=3#ICO_Immersion");
+    display: flex;
+    width: 40px;
+    height: 40px;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.floor-hint-icon--mockup {
+    background-image: url("project://database/Packages/com.twinny.mobile/Samples/SceneTemplates/MobileStartScene/Sprites/Icon_Building.png?fileID=21300000&guid=b969cc91f097f8748ac779b1e60ecc9f&type=3#Icon_Building");
+}
+
+.floor-hint-root.has-immersion .floor-hint-icon {
+    display: flex;
+    opacity: 1;
+}
+
+.floor-hint-root.no-immersion .floor-hint-icon {
+    display: none;
+    opacity: 0;
+}

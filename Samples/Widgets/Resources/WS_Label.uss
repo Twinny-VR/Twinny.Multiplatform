@@ -1,0 +1,95 @@
+.ws-label-root {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: rgba(12, 16, 20, 0.9);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(151, 247, 120, 0.95);
+    border-right-color: rgba(151, 247, 120, 0.95);
+    border-top-color: rgba(151, 247, 120, 0.95);
+    border-bottom-color: rgba(151, 247, 120, 0.95);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    max-width: none;
+    min-height: 100%;
+    min-width: 100%;
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-bottom: 24px;
+    padding-top: 24px;
+}
+
+.ws-label-accent {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    background-color: rgb(151, 247, 120);
+    padding-top: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    width: 10px;
+    min-height: auto;
+    height: 80%;
+}
+
+.ws-label-text {
+    flex-direction: column;
+    flex-grow: 1;
+    align-self: stretch;
+    justify-content: center;
+    align-content: stretch;
+    align-items: stretch;
+    padding-left: 32px;
+}
+
+.ws-label-title {
+    color: rgb(245, 248, 250);
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/segoeui.ttf?fileID=12800000&guid=56ef884df9fd65242b49937f4dfb4252&type=3#segoeui");
+    -unity-font-style: bold;
+    white-space: nowrap;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    -unity-text-align: lower-left;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    align-self: stretch;
+    translate: 0 16px;
+    font-size: 220px;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.ws-label-subtitle {
+    color: rgba(205, 225, 210, 0.92);
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/segoeui.ttf?fileID=12800000&guid=56ef884df9fd65242b49937f4dfb4252&type=3#segoeui");
+    white-space: nowrap;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    -unity-text-align: upper-left;
+    align-self: stretch;
+    flex-grow: 1;
+    flex-shrink: 0;
+    font-size: 110px;
+    translate: 0 -24px;
+}

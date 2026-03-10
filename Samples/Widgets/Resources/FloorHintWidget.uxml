@@ -1,0 +1,10 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Packages/com.twinny.mobile/Samples/Widgets/Resources/FloorHintWidgetStyles.uss?fileID=7433441132597879392&amp;guid=3eb1677a956de414ab6c447529cd6268&amp;type=3#FloorHintWidgetStyles"/>
+    <ui:VisualElement name="FloorHintRoot" class="floor-hint-root" style="min-height: 64px;">
+        <ui:VisualElement name="FloorHintText" class="floor-hint-text" style="align-self: stretch; flex-direction: column;">
+            <ui:Label text="Floor Name" name="FloorHintTitle" class="floor-hint-title"/>
+            <ui:Label text="#0 Floor" name="FloorHintSubtitle" class="floor-hint-subtitle"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="FloorHintImmersionIcon" class="floor-hint-icon floor-hint-icon--immersive"/>
+    </ui:VisualElement>
+</ui:UXML>

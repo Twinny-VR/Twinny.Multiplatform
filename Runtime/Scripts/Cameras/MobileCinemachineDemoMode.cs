@@ -31,6 +31,7 @@ namespace Twinny.Mobile.Cameras
         [Header("References")]
         [SerializeField] private CinemachineCamera _cinemachineCamera;
         [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
+        [SerializeField] private MobileCinemachineOrbitalHandler _orbitalHandler;
 
         private float _lastInteractionTime;
         private bool _isDemoActive;
@@ -67,9 +68,18 @@ namespace Twinny.Mobile.Cameras
             if (!IsActiveCamera()) return;
             if (_orbitalFollow == null) return;
 
+            CinemachinePOI activePoi = GetActivePointOfInterest();
+            if (activePoi != null && activePoi.AvoidDemoMode)
+            {
+                if (_isDemoActive)
+                    StopDemo(resetIdleTimer: false);
+                return;
+            }
+
             if (!_isDemoActive)
             {
-                if (Time.unscaledTime - _lastInteractionTime >= _idleSeconds)
+                float idleSeconds = GetEffectiveIdleSeconds(activePoi);
+                if (Time.unscaledTime - _lastInteractionTime >= idleSeconds)
                     StartDemo();
                 return;
             }
@@ -129,13 +139,22 @@ namespace Twinny.Mobile.Cameras
         private void NotifyInteraction()
         {
             _lastInteractionTime = Time.unscaledTime;
+            if (_isDemoActive)
+                StopDemo(resetIdleTimer: false);
+        }
+
+        private void StopDemo(bool resetIdleTimer)
+        {
+            if (resetIdleTimer)
+                _lastInteractionTime = Time.unscaledTime;
+
             if (!_isDemoActive) return;
 
             _isDemoActive = false;
             CallbackHub.CallAction<ITwinnyMobileCallbacks>(callback => callback.OnExitDemoMode());
             RestoreCameraTargets();
             if (_logState)
-                Debug.Log("[MobileCinemachineDemoMode] Demo stopped by interaction.");
+                Debug.Log("[MobileCinemachineDemoMode] Demo stopped.");
         }
 
         private void RestoreCameraTargets()
@@ -189,6 +208,28 @@ namespace Twinny.Mobile.Cameras
 
             if (_orbitalFollow == null)
                 _orbitalFollow = GetComponent<CinemachineOrbitalFollow>();
+
+            if (_orbitalHandler == null)
+                _orbitalHandler = GetComponent<MobileCinemachineOrbitalHandler>();
+        }
+
+        private CinemachinePOI GetActivePointOfInterest()
+        {
+            EnsureReferences();
+            if (_orbitalHandler != null && _orbitalHandler.ActivePointOfInterest != null)
+                return _orbitalHandler.ActivePointOfInterest;
+
+            Transform followTarget = _cinemachineCamera != null ? _cinemachineCamera.Follow : null;
+            return followTarget != null ? followTarget.GetComponent<CinemachinePOI>() : null;
+        }
+
+        private float GetEffectiveIdleSeconds(CinemachinePOI activePoi)
+        {
+            float idleSeconds = _idleSeconds;
+            if (activePoi != null && activePoi.HasDemoIdleSecondsOverride)
+                idleSeconds = activePoi.DemoIdleSecondsOverride;
+
+            return Mathf.Max(0f, idleSeconds);
         }
 
         private bool IsActiveCamera()

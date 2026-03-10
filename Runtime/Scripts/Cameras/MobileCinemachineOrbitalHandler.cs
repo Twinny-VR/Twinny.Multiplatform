@@ -32,6 +32,7 @@ namespace Twinny.Mobile.Cameras
         [Header("Cinemachine")]
         [SerializeField] private CinemachineCamera _cinemachineCamera;
         [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
+        [SerializeField] private CinemachinePOI _pointOfInterest;
 
         [Header("Mode")]
         [SerializeField] private int _activePriority = 20;
@@ -64,6 +65,16 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private bool _lockPanZ;
         [SerializeField] private Transform _customPanTarget;
         [SerializeField] private float _maxWallHeight = 3.0f;
+        private Vector2 _defaultVerticalAxisLimits;
+        private Vector2 _defaultRadiusLimits;
+        private float _defaultMaxPanDistance;
+        private bool _defaultEnablePanLimit;
+        private bool _defaultLockPanX;
+        private bool _defaultLockPanY;
+        private bool _defaultLockPanZ;
+        private CinemachineDeoccluder m_deoccluder;
+        private float _defaultDeoccluderRadius;
+        private bool _hasDefaultDeoccluderRadius;
 
         private PropertyInfo _radiusProperty;
         private FieldInfo _radiusField;
@@ -90,6 +101,9 @@ namespace Twinny.Mobile.Cameras
         private bool _isRotationTransitioning;
         private float _targetHorizontalAxis;
         private float _targetVerticalAxis;
+        private CinemachinePOI _activePoi;
+        private Transform _activeTrackingTarget;
+        private CinemachinePOI _trackingTargetPoi;
 
         private struct SuspendedHardLookState
         {
@@ -100,6 +114,7 @@ namespace Twinny.Mobile.Cameras
         private void Update()
         {
             if (!IsActiveCamera()) return;
+            RefreshTargetOverrides();
             EnforceRotationLockWhilePanning();
             UpdatePanReturn();
             UpdateRadiusTransition();
@@ -110,8 +125,11 @@ namespace Twinny.Mobile.Cameras
         {
             s_activeInstanceCount++;
             EnsureReferences();
+            CacheDeoccluderMembers();
+            CacheDefaultSettings();
             CacheOrbitalMembers();
             InitializePanLimit();
+            RefreshTargetOverrides(forceRefresh: true);
             ApplyMode(_isModeActive);
             CallbackHub.RegisterCallback<IMobileInputCallbacks>(this);
             CallbackHub.RegisterCallback<ITwinnyMobileCallbacks>(this);
@@ -134,6 +152,8 @@ namespace Twinny.Mobile.Cameras
         {
             EnsureReferences();
             ClampLimits();
+            CacheDeoccluderMembers();
+            CacheDefaultSettings();
             CacheOrbitalMembers();
         }
 
@@ -165,6 +185,19 @@ namespace Twinny.Mobile.Cameras
         {
             ApplyZoom(delta);
         }
+
+        public CinemachinePOI PointOfInterest
+        {
+            get => _pointOfInterest;
+            set
+            {
+                if (_pointOfInterest == value) return;
+                _pointOfInterest = value;
+                RefreshTargetOverrides(forceRefresh: true);
+            }
+        }
+
+        public CinemachinePOI ActivePointOfInterest => _activePoi;
 
         public void OnTwoFingerTap(Vector2 position) { }
         public void OnTwoFingerLongPress(Vector2 position) { }
@@ -523,6 +556,104 @@ namespace Twinny.Mobile.Cameras
                 _radiusLimits.x = _radiusLimits.y;
         }
 
+        private void CacheDefaultSettings()
+        {
+            _defaultVerticalAxisLimits = _verticalAxisLimits;
+            _defaultRadiusLimits = _radiusLimits;
+            _defaultMaxPanDistance = _maxPanDistance;
+            _defaultEnablePanLimit = _enablePanLimit;
+            _defaultLockPanX = _lockPanX;
+            _defaultLockPanY = _lockPanY;
+            _defaultLockPanZ = _lockPanZ;
+
+            float deoccluderRadius = GetDeoccluderRadius();
+            if (!float.IsNaN(deoccluderRadius))
+            {
+                _defaultDeoccluderRadius = deoccluderRadius;
+                _hasDefaultDeoccluderRadius = true;
+            }
+        }
+
+        private void RefreshTargetOverrides(bool forceRefresh = false)
+        {
+            Transform trackingTarget = GetTrackingTarget();
+            _trackingTargetPoi = trackingTarget != null ? trackingTarget.GetComponent<CinemachinePOI>() : null;
+            CinemachinePOI poi = _pointOfInterest != null ? _pointOfInterest : _trackingTargetPoi;
+            bool targetChanged = _activeTrackingTarget != trackingTarget;
+            if (!forceRefresh && _activePoi == poi && !targetChanged) return;
+
+            _activeTrackingTarget = trackingTarget;
+            _activePoi = poi;
+            ApplyPoiOverrides(_activePoi);
+            SyncOrbitalStateToCurrentLimits();
+            InitializePanLimitForTarget(trackingTarget, targetChanged);
+
+            if (_isModeActive)
+            {
+                CallbackHub.CallAction<IMobileUICallbacks>(
+                    callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
+                );
+            }
+        }
+
+        private void ApplyPoiOverrides(CinemachinePOI poi)
+        {
+            _verticalAxisLimits = _defaultVerticalAxisLimits;
+            _radiusLimits = _defaultRadiusLimits;
+            _maxPanDistance = _defaultMaxPanDistance;
+            _enablePanLimit = _defaultEnablePanLimit;
+            _lockPanX = _defaultLockPanX;
+            _lockPanY = _defaultLockPanY;
+            _lockPanZ = _defaultLockPanZ;
+
+            if (poi == null)
+            {
+                ClampLimits();
+                return;
+            }
+
+            if (poi.HasVerticalAxisLimitsOverride)
+                _verticalAxisLimits = poi.VerticalAxisLimits;
+
+            if (poi.HasRadiusLimitsOverride)
+                _radiusLimits = poi.RadiusLimits;
+
+            if (poi.HasMaxPanDistanceOverride)
+                _maxPanDistance = poi.MaxPanDistance;
+
+            if (poi.HasEnablePanLimitOverride)
+                _enablePanLimit = poi.EnablePanLimitValue;
+
+            if (poi.HasPanConstraintOverride)
+            {
+                _lockPanX = poi.LockPanX;
+                _lockPanY = poi.LockPanY;
+                _lockPanZ = poi.LockPanZ;
+            }
+
+            ClampLimits();
+        }
+
+        private void SyncOrbitalStateToCurrentLimits()
+        {
+            if (_orbitalFollow != null && !_isRotationTransitioning)
+            {
+                var vertical = _orbitalFollow.VerticalAxis;
+                vertical.Value = Mathf.Clamp(vertical.Value, _verticalAxisLimits.x, _verticalAxisLimits.y);
+                _orbitalFollow.VerticalAxis = vertical;
+            }
+
+            if (!_isRadiusTransitioning)
+            {
+                float radius = GetRadius();
+                if (!float.IsNaN(radius))
+                    SetRadius(Mathf.Clamp(radius, _radiusLimits.x, _radiusLimits.y));
+            }
+
+            _targetRadius = Mathf.Clamp(_targetRadius, _radiusLimits.x, _radiusLimits.y);
+            _targetVerticalAxis = Mathf.Clamp(_targetVerticalAxis, _verticalAxisLimits.x, _verticalAxisLimits.y);
+        }
+
         private void CacheOrbitalMembers()
         {
             if (_orbitalFollow == null) return;
@@ -535,6 +666,27 @@ namespace Twinny.Mobile.Cameras
 
             _radiusField = type.GetField("Radius", flags)
                 ?? type.GetField("OrbitRadius", flags);
+        }
+
+        private void CacheDeoccluderMembers()
+        {
+            if (_cinemachineCamera == null) return;
+            if (m_deoccluder == null)
+                m_deoccluder = _cinemachineCamera.GetComponent<CinemachineDeoccluder>();
+        }
+
+        private float GetDeoccluderRadius()
+        {
+            if (m_deoccluder == null) return float.NaN;
+            return m_deoccluder.AvoidObstacles.CameraRadius;
+        }
+
+        private void SetDeoccluderRadius(float value)
+        {
+            if (m_deoccluder == null) return;
+            var avoidObstacles = m_deoccluder.AvoidObstacles;
+            avoidObstacles.CameraRadius = value;
+            m_deoccluder.AvoidObstacles = avoidObstacles;
         }
 
         private float GetRadius()
@@ -596,33 +748,21 @@ namespace Twinny.Mobile.Cameras
             if (panTarget == null) return;
             if (floor == null) return;
 
+            _pointOfInterest = floor.TargetTransform != null
+                ? floor.TargetTransform.GetComponent<CinemachinePOI>()
+                : null;
+            ApplyDeoccluderRadiusOverride(floor);
+
             if (_selectedFloor != null && _selectedFloor != floor)
                 _selectedFloor.Unselect();
 
             _isReturningPan = false;
             _panReturnVelocity = Vector3.zero;
             _isRotationTransitioning = false;
-
-            Transform lookAtTarget = null;
-            if (_cinemachineCamera != null)
-            {
-                lookAtTarget = _isHardLookSuspended
-                    ? _suspendedLookAtTarget
-                    : _cinemachineCamera.LookAt;
-            }
-
             SuspendHardLookWhilePanning();
 
             Vector3 previousPanPosition = panTarget.position;
             panTarget.position = floor.TargetPosition;
-            Vector3 panDelta = panTarget.position - previousPanPosition;
-
-            // Keep camera relation stable when Follow jumps to a floor anchor.
-            if (_moveLookAtWithFloorTarget)
-            {
-                if (lookAtTarget != null && lookAtTarget != panTarget)
-                    lookAtTarget.position += panDelta;
-            }
 
             _panOriginPosition = panTarget.position;
             _initialPanTargetPosition = panTarget.position;
@@ -639,8 +779,12 @@ namespace Twinny.Mobile.Cameras
             if (_applyFloorRotationOnSelect)
             {
                 Vector3 targetEuler = floor.TargetRotation.eulerAngles;
-                _targetHorizontalAxis = targetEuler.y;
-                _targetVerticalAxis = Mathf.Clamp(NormalizeSignedAngle(targetEuler.x), _verticalAxisLimits.x, _verticalAxisLimits.y);
+                _targetHorizontalAxis = NormalizeSignedAngle(targetEuler.y);
+                _targetVerticalAxis = Mathf.Clamp(
+                    NormalizeSignedAngle(targetEuler.x),
+                    _verticalAxisLimits.x,
+                    _verticalAxisLimits.y
+                );
                 _isRotationTransitioning = true;
             }
             else
@@ -652,6 +796,33 @@ namespace Twinny.Mobile.Cameras
             CallbackHub.CallAction<IMobileUICallbacks>(
                 callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
             );
+        }
+
+        private void ApplyDeoccluderRadiusOverride(Floor floor)
+        {
+            if (!_hasDefaultDeoccluderRadius)
+            {
+                float currentRadius = GetDeoccluderRadius();
+                if (!float.IsNaN(currentRadius))
+                {
+                    _defaultDeoccluderRadius = currentRadius;
+                    _hasDefaultDeoccluderRadius = true;
+                }
+            }
+
+            if (!_hasDefaultDeoccluderRadius) return;
+
+            CinemachinePOI focusPoi = null;
+            if (floor != null && floor.UseFocusPoint && floor.FocusPoint != null)
+                focusPoi = floor.FocusPoint.GetComponent<CinemachinePOI>();
+
+            if (focusPoi != null && focusPoi.HasDeoccluderRadiusOverride)
+            {
+                SetDeoccluderRadius(focusPoi.OverrideDeoccluderRadius);
+                return;
+            }
+
+            SetDeoccluderRadius(_defaultDeoccluderRadius);
         }
 
         private void UpdateRadiusTransition()
@@ -713,7 +884,8 @@ namespace Twinny.Mobile.Cameras
             var horizontal = _orbitalFollow.HorizontalAxis;
             var vertical = _orbitalFollow.VerticalAxis;
 
-            float nextHorizontal = Mathf.MoveTowardsAngle(horizontal.Value, _targetHorizontalAxis, step);
+            float currentHorizontal = NormalizeSignedAngle(horizontal.Value);
+            float nextHorizontal = Mathf.MoveTowardsAngle(currentHorizontal, _targetHorizontalAxis, step);
             float nextVertical = Mathf.MoveTowards(vertical.Value, _targetVerticalAxis, step);
 
             horizontal.Value = nextHorizontal;
@@ -741,6 +913,7 @@ namespace Twinny.Mobile.Cameras
             return angle;
         }
 
+
         private Transform GetPanTarget()
         {
             EnsureReferences();
@@ -761,13 +934,24 @@ namespace Twinny.Mobile.Cameras
 
         private void InitializePanLimit()
         {
-            Transform target = GetTrackingTarget();
-            if (target != null && !_hasInitialPosition)
+            InitializePanLimitForTarget(GetTrackingTarget(), true);
+        }
+
+        private void InitializePanLimitForTarget(Transform target, bool forceReset)
+        {
+            if (target == null)
+            {
+                _hasInitialPosition = false;
+                return;
+            }
+
+            if (forceReset || !_hasInitialPosition)
             {
                 _initialPanTargetPosition = target.position;
                 _hasInitialPosition = true;
             }
         }
+
 
         private Transform GetTrackingTarget()
         {

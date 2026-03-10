@@ -8,8 +8,8 @@ namespace Twinny.Mobile.Interactables
     public class FloorData
     {
         [Header("Identity")]
-        [field: SerializeField] public string Name { get; set; } = "Floor";
-        [field: SerializeField] public int Number { get; set; }
+        [field: SerializeField] public string Title { get; set; } = "Pavement";
+        [field: SerializeField] public string Subtitle { get; set; } = "Floor";
         [field: SerializeField] public string ImmersionSceneName { get; set; }
         public bool HasImmersionScene => !string.IsNullOrWhiteSpace(ImmersionSceneName);
 

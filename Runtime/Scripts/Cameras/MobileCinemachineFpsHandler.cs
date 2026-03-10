@@ -166,6 +166,27 @@ namespace Twinny.Mobile.Cameras
             _panTilt.TiltAxis = vertical;
         }
 
+        private void SyncCameraToCurrentGyroRotation()
+        {
+            if (!_useGyroscope) return;
+            if (_panTilt == null) return;
+
+            Vector3? gyroRotation = Twinny.Mobile.Input.MobileInputProvider.CurrentData.GyroRotation;
+            if (!gyroRotation.HasValue) return;
+
+            Vector3 euler = gyroRotation.Value;
+            float yaw = NormalizeSignedAngle(euler.y);
+            float pitch = Mathf.Clamp(NormalizeSignedAngle(euler.x), _verticalAxisLimits.x, _verticalAxisLimits.y);
+
+            var horizontal = _panTilt.PanAxis;
+            horizontal.Value = yaw;
+            _panTilt.PanAxis = horizontal;
+
+            var vertical = _panTilt.TiltAxis;
+            vertical.Value = pitch;
+            _panTilt.TiltAxis = vertical;
+        }
+
         private void DisableRecentering()
         {
             if (_panTilt == null) return;
@@ -194,6 +215,17 @@ namespace Twinny.Mobile.Cameras
             _isModeActive = isActive;
             if (_cinemachineCamera != null)
                 _cinemachineCamera.Priority = isActive ? _activePriority : _inactivePriority;
+
+            if (isActive)
+                SyncCameraToCurrentGyroRotation();
+        }
+
+        private static float NormalizeSignedAngle(float angle)
+        {
+            angle %= 360f;
+            if (angle > 180f) angle -= 360f;
+            if (angle < -180f) angle += 360f;
+            return angle;
         }
 
         private void ClampLimits()

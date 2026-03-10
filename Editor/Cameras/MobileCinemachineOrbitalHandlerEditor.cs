@@ -15,7 +15,7 @@ namespace Twinny.Mobile.Editor.Camera
     {
         private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uxml";
         private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uss";
-        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Camera/Icons/icons.png";
+        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Cameras/Icons/icons.png";
         private const string OrbitalIconName = "icons_0";
         private const string TitleFontPath = "Packages/com.twinny.twe26/Editor/SetupGuide/Resources/Fonts/DINNextLTPro-Condensed.otf";
         private const string ApplyKeyPrefix = "Twinny.Mobile.RuntimeApply.";

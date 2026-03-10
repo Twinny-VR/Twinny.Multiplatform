@@ -11,7 +11,7 @@ namespace Twinny.Mobile.Editor.Navigation
     {
         private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uxml";
         private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uss";
-        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Camera/Icons/icons.png";
+        private const string IconsPath = "Packages/com.twinny.mobile/Editor/Cameras/Icons/icons.png";
         private const string IconName = "icons_2";
         private const string TitleFontPath = "Packages/com.twinny.twe26/Editor/SetupGuide/Resources/Fonts/DINNextLTPro-Condensed.otf";
         private const float SliderStep = 0.1f;

@@ -51,5 +51,6 @@ namespace Twinny.Mobile
         /// </summary>
         void OnEnterDemoMode();
         void OnExitDemoMode();
+        void OnPOIFocused();
     }
 }

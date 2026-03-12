@@ -122,6 +122,7 @@ namespace Twinny.Mobile.Cameras
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
+         public void OnPOIFocused() { }
 
         public void OnMaxWallHeightRequested(float height) { }
         public void OnImmersiveRequested(string sceneName) { }

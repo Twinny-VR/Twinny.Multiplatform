@@ -28,6 +28,7 @@ namespace Twinny.Mobile.Editor.Cameras
             ApplyTitle(root);
             ApplyHeroIcon(root);
             ApplyTitleFont(root);
+            AddZeroValueWarning(root.Q<VisualElement>("handlerFields"));
 
             AddOrbitalFields(root.Q<VisualElement>("handlerFields"));
             AddPanConstraintFields(root.Q<VisualElement>("cutoffFields"));
@@ -55,14 +56,47 @@ namespace Twinny.Mobile.Editor.Cameras
             if (subtitle != null) subtitle.text = "Point of interest camera overrides";
         }
 
+        private void AddZeroValueWarning(VisualElement container)
+        {
+            if (container == null) return;
+
+            var helpBox = new HelpBox(
+                "Only non-zero override values are considered at runtime. Zero-valued fields are treated as unset and will fall back to the handler defaults.",
+                HelpBoxMessageType.Warning
+            );
+            container.Add(helpBox);
+        }
+
         private void AddOrbitalFields(VisualElement container)
         {
             if (container == null) return;
 
-            AddProperty(container, serializedObject.FindProperty("_verticalAxisLimits"), serializedObject);
+            AddSlider(container, "_targetRadius", 0f, 200f, "Target Radius");
             AddProperty(container, serializedObject.FindProperty("_radiusLimits"), serializedObject);
+            SerializedProperty overrideRotationProp = serializedObject.FindProperty("_overrideRotation");
+            AddProperty(container, overrideRotationProp, serializedObject);
+
+            var rotationContainer = new VisualElement();
+            container.Add(rotationContainer);
+            AddRadiansAsDegreesSlider(rotationContainer, "_targetPan", "Target Pan");
+            AddRadiansAsDegreesSlider(rotationContainer, "_targetTilt", "Target Tilt");
+            AddProperty(container, serializedObject.FindProperty("_verticalAxisLimits"), serializedObject);
             AddSlider(container, "_maxPanDistance", 0f, 100f, "Max Pan Distance");
             AddProperty(container, serializedObject.FindProperty("_enablePanLimit"), serializedObject);
+            if (overrideRotationProp != null)
+            {
+                void RefreshRotationVisibility()
+                {
+                    serializedObject.Update();
+                    rotationContainer.style.display = overrideRotationProp.boolValue
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                }
+
+                RefreshRotationVisibility();
+                container.TrackPropertyValue(overrideRotationProp, _ => RefreshRotationVisibility());
+            }
+
             SerializedProperty overrideDeoccluderProp = serializedObject.FindProperty("_overrideDeoccluder");
             AddProperty(container, overrideDeoccluderProp, serializedObject);
 
@@ -185,6 +219,9 @@ namespace Twinny.Mobile.Editor.Cameras
             if (poi == null) return;
 
             container.Add(new Label("Runtime Preview"));
+            AddHelpLabel(container, $"Target Radius: {poi.TargetRadius}");
+            AddHelpLabel(container, $"Target Pan (rad): {poi.TargetPan}");
+            AddHelpLabel(container, $"Target Tilt (rad): {poi.TargetTilt}");
             AddHelpLabel(container, $"Vertical Limits: {poi.VerticalAxisLimits}");
             AddHelpLabel(container, $"Radius Limits: {poi.RadiusLimits}");
         }
@@ -202,6 +239,48 @@ namespace Twinny.Mobile.Editor.Cameras
             SerializedProperty prop = serializedObject.FindProperty(propertyName);
             if (prop == null) return;
             AddSlider(container, prop, min, max, label);
+        }
+
+        private void AddRadiansAsDegreesSlider(VisualElement container, string propertyName, string label)
+        {
+            SerializedProperty prop = serializedObject.FindProperty(propertyName);
+            if (container == null || prop == null) return;
+
+            var row = new VisualElement();
+            row.AddToClassList("row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("row-label");
+
+            var slider = new Slider(0f, 360f);
+            slider.AddToClassList("row-field");
+            var field = new FloatField();
+            field.AddToClassList("mini-field");
+
+            float currentDegrees = Mathf.Rad2Deg * prop.floatValue;
+            slider.SetValueWithoutNotify(currentDegrees);
+            field.SetValueWithoutNotify(currentDegrees);
+
+            void ApplyDegrees(float degrees)
+            {
+                float snapped = Snap(Mathf.Clamp(degrees, 0f, 360f), SliderStep);
+                prop.floatValue = Mathf.Deg2Rad * snapped;
+                serializedObject.ApplyModifiedProperties();
+                slider.SetValueWithoutNotify(snapped);
+                field.SetValueWithoutNotify(snapped);
+            }
+
+            slider.RegisterValueChangedCallback(evt => ApplyDegrees(evt.newValue));
+            field.RegisterValueChangedCallback(evt => ApplyDegrees(evt.newValue));
+
+            var fieldRow = new VisualElement();
+            fieldRow.AddToClassList("inline-values");
+            fieldRow.Add(slider);
+            fieldRow.Add(field);
+
+            row.Add(labelEl);
+            row.Add(fieldRow);
+            container.Add(row);
         }
 
         private void AddSlider(VisualElement container, SerializedProperty prop, float min, float max, string label)

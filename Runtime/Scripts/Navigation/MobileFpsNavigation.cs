@@ -151,6 +151,8 @@ namespace Twinny.Mobile.Navigation
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
+        public void OnPOIFocused() { }
+
 
         private bool IsInteractable(Transform target)
         {

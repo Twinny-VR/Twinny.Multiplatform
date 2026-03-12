@@ -127,6 +127,7 @@ namespace Twinny.Mobile
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
+        public void OnPOIFocused() { }
 
         public void OnTeleportToLandMark(int landMarkIndex)
         {

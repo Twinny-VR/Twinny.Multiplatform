@@ -1,4 +1,4 @@
-using Twinny.Mobile.Interactables;
+using Twinny.Mobile.Cameras;
 using UnityEngine;
 using UnityEngine.UIElements;
 

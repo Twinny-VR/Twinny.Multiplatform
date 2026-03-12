@@ -108,8 +108,7 @@ namespace Twinny.Mobile.Editor.Camera
             AddSlider(container, "_hardLookRestoreDelay", 0f, 0.5f, "HardLook Restore Delay");
 
             AddProperty(container, serializedObject.FindProperty("_returnTrackingTargetToOriginOnRelease"), serializedObject);
-            AddProperty(container, serializedObject.FindProperty("_enablePanLimit"), serializedObject);
-            AddSlider(container, "_maxPanDistance", 0f, 50f, "Max Pan Dist");
+            AddPanLimitField(container);
             AddProperty(container, serializedObject.FindProperty("_panTargetMode"), serializedObject);
             AddPanConstraintToggles(container);
             AddProperty(container, serializedObject.FindProperty("_customPanTarget"), serializedObject);
@@ -287,6 +286,48 @@ namespace Twinny.Mobile.Editor.Camera
             values.Add(CreateAxisToggle("X", lockX));
             values.Add(CreateAxisToggle("Y", lockY));
             values.Add(CreateAxisToggle("Z", lockZ));
+
+            row.Add(label);
+            row.Add(values);
+            container.Add(row);
+        }
+
+        private void AddPanLimitField(VisualElement container)
+        {
+            SerializedProperty enablePanLimit = serializedObject.FindProperty("_enablePanLimit");
+            SerializedProperty maxPanDistance = serializedObject.FindProperty("_maxPanDistance");
+            if (enablePanLimit == null)
+                return;
+
+            var row = new VisualElement();
+            row.AddToClassList("row");
+
+            var label = new Label("Enable Pan Limit");
+            label.AddToClassList("row-label");
+
+            var values = new VisualElement();
+            values.AddToClassList("inline-values");
+
+            var toggle = new Toggle();
+            toggle.BindProperty(enablePanLimit);
+
+            values.Add(toggle);
+
+            if (maxPanDistance != null)
+            {
+                var distanceField = new FloatField();
+                distanceField.label = "Max Pan Distance";
+                distanceField.BindProperty(maxPanDistance);
+                distanceField.style.minWidth = 260f;
+                distanceField.style.display = enablePanLimit.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    distanceField.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                });
+
+                values.Add(distanceField);
+            }
 
             row.Add(label);
             row.Add(values);

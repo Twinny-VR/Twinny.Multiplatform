@@ -48,6 +48,7 @@ namespace Twinny.Mobile.Input
         private Vector3 _lastDeviceRotation;
         [SerializeField] private float _gyroTiltThreshold = 0.5f;
         [SerializeField] private float _twoFingerSwipeSensitivity = 10.0f;
+        private bool _suppressSingleTouchUntilAllReleased;
         private bool _isScreenReaderActive;
         private bool _warnedMissingSettings;
         private bool _warnedMissingRouter;
@@ -208,8 +209,19 @@ namespace Twinny.Mobile.Input
 
             int touchCount = UnityInput.touchCount;
 
+            if (touchCount == 0)
+                _suppressSingleTouchUntilAllReleased = false;
+            else if (touchCount > 1)
+                _suppressSingleTouchUntilAllReleased = true;
+
             // Handle touch gestures based on finger count
-            if (touchCount == 1) HandleSingleTouch();
+            if (touchCount == 1)
+            {
+                if (_suppressSingleTouchUntilAllReleased)
+                    HandleSuppressedSingleTouch();
+                else
+                    HandleSingleTouch();
+            }
             else if (touchCount == 2) HandleTwoFingers();
             else if (touchCount == 3) HandleThreeFingers();
             else if (touchCount == 4) HandleFourFingers();
@@ -225,6 +237,19 @@ namespace Twinny.Mobile.Input
 
             // Check for accessibility actions
             CheckAccessibilityActions();
+        }
+
+        private void HandleSuppressedSingleTouch()
+        {
+            if (UnityInput.touchCount != 1)
+                return;
+
+            Touch t = UnityInput.GetTouch(0);
+            if (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled)
+            {
+                _touchHistories.Remove(t.fingerId);
+                _uiBlockedTouchIds.Remove(t.fingerId);
+            }
         }
 
         private bool IsPointerOverUi()

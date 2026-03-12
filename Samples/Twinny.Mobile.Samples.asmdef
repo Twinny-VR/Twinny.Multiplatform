@@ -2,9 +2,10 @@
     "name": "Twinny.Mobile.Samples",
     "rootNamespace": "Twinny.Mobile.Samples",
     "references": [
-        "Twinny.Mobile",
+        "ConceptFactory.Core",
         "Twinny.Core",
-        "ConceptFactory.Core"
+        "Twinny.Mobile",
+        "Twinny.Mobile.Cameras"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

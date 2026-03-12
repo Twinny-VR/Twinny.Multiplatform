@@ -33,7 +33,9 @@ namespace Twinny.Mobile
             EnterMockupMode,
             ExitMockupMode,
             EnterDemoMode,
-            ExitDemoMode
+            ExitDemoMode,
+            POIFocused
+
         }
 
         public ActionType type;
@@ -93,6 +95,7 @@ namespace Twinny.Mobile
         public void OnEnterMockupMode() => TriggerAction(MobileAction.ActionType.EnterMockupMode);
         public void OnExitMockupMode() => TriggerAction(MobileAction.ActionType.ExitMockupMode);
         public void OnEnterDemoMode() => TriggerAction(MobileAction.ActionType.EnterDemoMode);
+        public void OnPOIFocused() => TriggerAction(MobileAction.ActionType.POIFocused);
         public void OnExitDemoMode() => TriggerAction(MobileAction.ActionType.ExitDemoMode);
     }
 }

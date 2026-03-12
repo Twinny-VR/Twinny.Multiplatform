@@ -87,6 +87,7 @@ namespace Twinny.Mobile.Input
             EnsureSettingsLoaded();
             ForceReleaseIfPointerLeavesGameView();
             ForceReleaseIfButtonsUp();
+            ForceExclusivePrimaryMouseMode();
 
             // Recovery for stale suppression state after releasing buttons outside Game View.
             if (_suppressSingleUntilRelease &&
@@ -111,6 +112,24 @@ namespace Twinny.Mobile.Input
             HandleSingleFinger();
         }
 
+        private void ForceExclusivePrimaryMouseMode()
+        {
+            bool left = UnityEngine.Input.GetMouseButton(0);
+            bool right = UnityEngine.Input.GetMouseButton(1);
+            bool middle = UnityEngine.Input.GetMouseButton(2);
+
+            if (!left || right || middle)
+                return;
+
+            if (_twoFingerDown)
+                EndTwoFinger();
+
+            if (_mousePinchDown)
+                EndMiddlePan();
+
+            _suppressSingleUntilRelease = false;
+        }
+
         private void ForceReleaseIfPointerLeavesGameView()
         {
             if (!HasActiveGestureState())
@@ -124,7 +143,7 @@ namespace Twinny.Mobile.Input
             if (router != null)
                 router.Cancel();
 
-            ResetAllStates();
+            ResetAllStates(notifyCancellation: true);
         }
 
         private static bool IsOutsideGameView(Vector3 mousePosition)
@@ -472,7 +491,7 @@ namespace Twinny.Mobile.Input
         private void OnApplicationFocus(bool hasFocus)
         {
             if (hasFocus) return;
-            ResetAllStates();
+            ResetAllStates(notifyCancellation: true);
         }
 
         private void EmitTwoFingerPanFromDelta(
@@ -496,11 +515,14 @@ namespace Twinny.Mobile.Input
 
         private void OnDisable()
         {
-            ResetAllStates();
+            ResetAllStates(notifyCancellation: true);
         }
 
-        private void ResetAllStates()
+        private void ResetAllStates(bool notifyCancellation = false)
         {
+            if (notifyCancellation)
+                NotifyGestureCancellation();
+
             _singleDown = false;
             _singleDragging = false;
             _singleBlockedByUi = false;
@@ -516,6 +538,32 @@ namespace Twinny.Mobile.Input
             _middlePanDragging = false;
             _suppressSingleUntilRelease = false;
             _suppressTap = false;
+        }
+
+        private void NotifyGestureCancellation()
+        {
+            bool hadPanGesture =
+                _twoFingerDown ||
+                _twoFingerDragging ||
+                _mousePinchDown ||
+                _middlePanDragging;
+
+            if (hadPanGesture)
+            {
+                Vector2 center = _mousePinchDown ? _lastMousePinchPos : _lastTwoFingerPos;
+                CallbackHub.CallAction<IMobileInputCallbacks>(
+                    cb => cb.OnTwoFingerSwipe(Vector2.zero, center)
+                );
+                MobileInputEvents.TwoFingerSwipe(Vector2.zero, center);
+                MobileInputEvents.Drag(Vector2.zero, center);
+            }
+
+            if (!HasActiveGestureState())
+                return;
+
+            var router = TryGetRouter();
+            if (router != null)
+                router.Cancel();
         }
 
         private bool IsPointerOverUiAt(Vector2 screenPosition)

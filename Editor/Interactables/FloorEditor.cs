@@ -1,4 +1,4 @@
-using Twinny.Mobile.Interactables;
+using Twinny.Mobile.Cameras;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -94,20 +94,20 @@ namespace Twinny.Mobile.Editor.Interactables
             if (container == null) return;
 
             SerializedProperty useFocusPointProp = serializedObject.FindProperty("_useFocusPoint");
-            SerializedProperty focusPointProp = serializedObject.FindProperty("_focusPoint");
+            SerializedProperty trackerPointProp = serializedObject.FindProperty("_trackerPoint");
 
             AddSlider(container, "_maxWallHeight", 0f, 20f, "Max Wall Height");
             AddProperty(container, useFocusPointProp, serializedObject);
-            AddProperty(container, focusPointProp, serializedObject);
-            AddSlider(container, "_targetRadius", 0.1f, 200f, "Target Radius");
-            AddProperty(container, serializedObject.FindProperty("_targetPositionOffset"), serializedObject);
-            AddProperty(container, serializedObject.FindProperty("_targetRotationOffset"), serializedObject);
+            AddProperty(container, trackerPointProp, serializedObject);
+            AddCreateTrackerPointButton(container, trackerPointProp);
+            AddTrackerPointProperties(container, trackerPointProp);
         }
 
         private void AddEventFields(VisualElement container)
         {
             if (container == null) return;
             AddProperty(container, serializedObject.FindProperty("_onSelect"), serializedObject);
+            AddProperty(container, serializedObject.FindProperty("_onFocused"), serializedObject);
             AddProperty(container, serializedObject.FindProperty("_onUnselect"), serializedObject);
         }
 
@@ -120,7 +120,6 @@ namespace Twinny.Mobile.Editor.Interactables
 
             container.Add(new Label("Runtime Preview"));
             AddHelpLabel(container, $"Target Position: {floor.TargetPosition}");
-            AddHelpLabel(container, $"Target Rotation (Euler): {floor.TargetRotation.eulerAngles}");
         }
 
         private void AddProperty(VisualElement container, SerializedProperty root, SerializedObject owner)
@@ -196,6 +195,55 @@ namespace Twinny.Mobile.Editor.Interactables
             container.Add(row);
         }
 
+        private void AddRadiansAsDegreesSlider(
+            VisualElement container,
+            SerializedObject owner,
+            string propertyName,
+            string label
+        )
+        {
+            if (container == null || owner == null) return;
+
+            SerializedProperty prop = owner.FindProperty(propertyName);
+            if (prop == null) return;
+
+            var row = new VisualElement();
+            row.AddToClassList("row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("row-label");
+
+            var slider = new Slider(0f, 360f);
+            slider.AddToClassList("row-field");
+            var field = new FloatField();
+            field.AddToClassList("mini-field");
+
+            float currentDegrees = Mathf.Rad2Deg * prop.floatValue;
+            slider.SetValueWithoutNotify(currentDegrees);
+            field.SetValueWithoutNotify(currentDegrees);
+
+            void ApplyDegrees(float degrees)
+            {
+                float snapped = Snap(Mathf.Clamp(degrees, 0f, 360f), SliderStep);
+                prop.floatValue = Mathf.Deg2Rad * snapped;
+                owner.ApplyModifiedProperties();
+                slider.SetValueWithoutNotify(snapped);
+                field.SetValueWithoutNotify(snapped);
+            }
+
+            slider.RegisterValueChangedCallback(evt => ApplyDegrees(evt.newValue));
+            field.RegisterValueChangedCallback(evt => ApplyDegrees(evt.newValue));
+
+            var fieldRow = new VisualElement();
+            fieldRow.AddToClassList("inline-values");
+            fieldRow.Add(slider);
+            fieldRow.Add(field);
+
+            row.Add(labelEl);
+            row.Add(fieldRow);
+            container.Add(row);
+        }
+
         private static float Snap(float value, float step)
         {
             if (step <= 0f) return value;
@@ -207,6 +255,208 @@ namespace Twinny.Mobile.Editor.Interactables
             var label = new Label(text);
             label.AddToClassList("inline-note");
             container.Add(label);
+        }
+
+        private static VisualElement CreateAxisToggle(string axis, SerializedProperty property)
+        {
+            var wrap = new VisualElement();
+            wrap.AddToClassList("axis-toggle-item");
+
+            var axisLabel = new Label(axis);
+            axisLabel.AddToClassList("axis-toggle-label");
+
+            var toggle = new Toggle();
+            toggle.AddToClassList("axis-toggle");
+            toggle.BindProperty(property);
+
+            wrap.Add(axisLabel);
+            wrap.Add(toggle);
+            return wrap;
+        }
+
+        private void AddCreateTrackerPointButton(VisualElement container, SerializedProperty trackerPointProp)
+        {
+            if (container == null || trackerPointProp == null) return;
+
+            var button = new Button(CreateTrackerPoint)
+            {
+                text = "Add Tracker Point"
+            };
+            container.Add(button);
+
+            void RefreshVisibility()
+            {
+                serializedObject.Update();
+                bool showButton = targets != null
+                    && targets.Length == 1
+                    && trackerPointProp.objectReferenceValue == null;
+                button.style.display = showButton ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            RefreshVisibility();
+            container.TrackPropertyValue(trackerPointProp, _ => RefreshVisibility());
+        }
+
+        private void CreateTrackerPoint()
+        {
+            if (targets == null || targets.Length != 1) return;
+
+            var floor = target as Floor;
+            if (floor == null) return;
+
+            SerializedProperty trackerPointProp = serializedObject.FindProperty("_trackerPoint");
+            if (trackerPointProp == null || trackerPointProp.objectReferenceValue != null) return;
+
+            GameObject trackerGo = new GameObject("TrackerPoint");
+            Undo.RegisterCreatedObjectUndo(trackerGo, "Create Tracker Point");
+            Undo.SetTransformParent(trackerGo.transform, floor.transform, "Parent Tracker Point");
+            trackerGo.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+            CinemachinePOI poi = Undo.AddComponent<CinemachinePOI>(trackerGo);
+            Undo.RecordObject(floor, "Assign Tracker Point");
+            trackerPointProp.objectReferenceValue = poi;
+            serializedObject.ApplyModifiedProperties();
+
+            EditorUtility.SetDirty(floor);
+            Selection.activeGameObject = trackerGo;
+        }
+
+        private void AddTrackerPointProperties(VisualElement container, SerializedProperty trackerPointProp)
+        {
+            if (container == null || trackerPointProp == null) return;
+
+            var trackerContainer = new VisualElement();
+            container.Add(trackerContainer);
+
+            void RebuildTrackerProperties()
+            {
+                trackerContainer.Clear();
+                serializedObject.Update();
+
+                if (trackerPointProp.objectReferenceValue is not CinemachinePOI poi)
+                {
+                    trackerContainer.style.display = DisplayStyle.None;
+                    return;
+                }
+
+                trackerContainer.style.display = DisplayStyle.Flex;
+                trackerContainer.Add(new Label("Tracker Point Settings"));
+                trackerContainer.Add(new HelpBox(
+                    "Only non-zero override values are considered at runtime. Zero-valued fields are treated as unset and will fall back to the handler defaults.",
+                    HelpBoxMessageType.Warning
+                ));
+
+                SerializedObject poiObject = new SerializedObject(poi);
+                AddSlider(trackerContainer, poiObject.FindProperty("_targetRadius"), 0f, 200f, "Target Radius", poiObject);
+                AddProperty(trackerContainer, poiObject.FindProperty("_radiusLimits"), poiObject);
+
+                SerializedProperty overrideRotationProp = poiObject.FindProperty("_overrideRotation");
+                AddProperty(trackerContainer, overrideRotationProp, poiObject);
+
+                var rotationContainer = new VisualElement();
+                trackerContainer.Add(rotationContainer);
+                AddRadiansAsDegreesSlider(rotationContainer, poiObject, "_targetPan", "Target Pan");
+                AddRadiansAsDegreesSlider(rotationContainer, poiObject, "_targetTilt", "Target Tilt");
+                AddProperty(trackerContainer, poiObject.FindProperty("_verticalAxisLimits"), poiObject);
+                AddProperty(trackerContainer, poiObject.FindProperty("_maxPanDistance"), poiObject);
+                AddProperty(trackerContainer, poiObject.FindProperty("_enablePanLimit"), poiObject);
+
+                void RefreshRotationVisibility()
+                {
+                    poiObject.Update();
+                    rotationContainer.style.display = overrideRotationProp != null && overrideRotationProp.boolValue
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                }
+
+                RefreshRotationVisibility();
+                if (overrideRotationProp != null)
+                    trackerContainer.TrackPropertyValue(overrideRotationProp, _ => RefreshRotationVisibility());
+
+                SerializedProperty overridePanConstraintProp = poiObject.FindProperty("_overridePanConstraint");
+                AddProperty(trackerContainer, overridePanConstraintProp, poiObject);
+
+                var panConstraintContainer = new VisualElement();
+                trackerContainer.Add(panConstraintContainer);
+
+                SerializedProperty lockX = poiObject.FindProperty("_lockPanX");
+                SerializedProperty lockY = poiObject.FindProperty("_lockPanY");
+                SerializedProperty lockZ = poiObject.FindProperty("_lockPanZ");
+
+                if (lockX != null && lockY != null && lockZ != null)
+                {
+                    var row = new VisualElement();
+                    row.AddToClassList("row");
+
+                    var label = new Label("Pan Constraint");
+                    label.AddToClassList("row-label");
+
+                    var values = new VisualElement();
+                    values.AddToClassList("inline-values");
+                    values.AddToClassList("axis-toggle-group");
+
+                    values.Add(CreateAxisToggle("X", lockX));
+                    values.Add(CreateAxisToggle("Y", lockY));
+                    values.Add(CreateAxisToggle("Z", lockZ));
+
+                    row.Add(label);
+                    row.Add(values);
+                    panConstraintContainer.Add(row);
+                }
+
+                void RefreshPanConstraintVisibility()
+                {
+                    poiObject.Update();
+                    panConstraintContainer.style.display = overridePanConstraintProp != null && overridePanConstraintProp.boolValue
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                }
+
+                RefreshPanConstraintVisibility();
+                if (overridePanConstraintProp != null)
+                    trackerContainer.TrackPropertyValue(overridePanConstraintProp, _ => RefreshPanConstraintVisibility());
+
+                SerializedProperty overrideDeoccluderProp = poiObject.FindProperty("_overrideDeoccluder");
+                AddProperty(trackerContainer, overrideDeoccluderProp, poiObject);
+
+                var deoccluderContainer = new VisualElement();
+                trackerContainer.Add(deoccluderContainer);
+                AddSlider(deoccluderContainer, poiObject.FindProperty("_overrideDeoccluderRadius"), 0f, 500f, "Deoccluder Radius", poiObject);
+
+                void RefreshDeoccluderVisibility()
+                {
+                    poiObject.Update();
+                    deoccluderContainer.style.display = overrideDeoccluderProp != null && overrideDeoccluderProp.boolValue
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                }
+
+                RefreshDeoccluderVisibility();
+                if (overrideDeoccluderProp != null)
+                    trackerContainer.TrackPropertyValue(overrideDeoccluderProp, _ => RefreshDeoccluderVisibility());
+
+                SerializedProperty avoidDemoModeProp = poiObject.FindProperty("_avoidDemoMode");
+                AddProperty(trackerContainer, avoidDemoModeProp, poiObject);
+
+                var demoContainer = new VisualElement();
+                trackerContainer.Add(demoContainer);
+                AddSlider(demoContainer, poiObject.FindProperty("_demoIdleSecondsOverride"), 0f, 120f, "Demo Idle Seconds", poiObject);
+
+                void RefreshDemoVisibility()
+                {
+                    poiObject.Update();
+                    demoContainer.style.display = avoidDemoModeProp != null && avoidDemoModeProp.boolValue
+                        ? DisplayStyle.None
+                        : DisplayStyle.Flex;
+                }
+
+                RefreshDemoVisibility();
+                if (avoidDemoModeProp != null)
+                    trackerContainer.TrackPropertyValue(avoidDemoModeProp, _ => RefreshDemoVisibility());
+            }
+
+            RebuildTrackerProperties();
+            container.TrackPropertyValue(trackerPointProp, _ => RebuildTrackerProperties());
         }
 
 

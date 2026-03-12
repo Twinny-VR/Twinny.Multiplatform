@@ -2,7 +2,7 @@ using Concept.Core;
 using System.Collections.Generic;
 using System.Linq;
 using Twinny.Core.Input;
-using Twinny.Mobile.Interactables;
+using Twinny.Mobile.Cameras;
 using Twinny.Mobile.Navigation;
 using Twinny.Shaders;
 using UnityEngine;
@@ -61,6 +61,7 @@ namespace Twinny.Mobile.Samples
         private FloorHintWidget _floorHintWidget;
         private Slider _cutoffSlider;
         private Floor _selectedFloor;
+        private bool _isFloorHintReadyToShow;
         private bool _isCutoffPointerDragging;
         private int _cutoffPointerId = -1;
         private bool _warnedMissingRoot;
@@ -181,16 +182,17 @@ namespace Twinny.Mobile.Samples
         {
             if (floor == null) return;
             _selectedFloor = floor;
+            _isFloorHintReadyToShow = false;
             EnsureFloorHintCreated();
             RefreshFloorHintContent();
-            SetFloorHintVisibility(true);
-            UpdateFloorHintPosition();
+            SetFloorHintVisibility(false);
         }
 
         private void HandleFloorUnselected(Floor floor)
         {
             if (_selectedFloor != floor) return;
             _selectedFloor = null;
+            _isFloorHintReadyToShow = false;
             SetFloorHintVisibility(false);
         }
 
@@ -216,6 +218,11 @@ namespace Twinny.Mobile.Samples
         {
             if (_floorHintWidget == null || _selectedFloor == null || _document == null) return;
             if (_document.rootVisualElement?.panel == null) return;
+            if (!_isFloorHintReadyToShow)
+            {
+                SetFloorHintVisibility(false);
+                return;
+            }
 
             if (_isDemoModeActive)
             {
@@ -226,7 +233,10 @@ namespace Twinny.Mobile.Samples
             if (cam == null) cam = FindAnyObjectByType<Camera>();
             if (cam == null) return;
 
-            Vector3 anchorScreen = cam.WorldToScreenPoint(_selectedFloor.FocusPoint.position);
+            Transform tracker = _selectedFloor.TrackerPoint != null
+                ? _selectedFloor.TrackerPoint.transform
+                : _selectedFloor.TargetTransform;
+            Vector3 anchorScreen = cam.WorldToScreenPoint(tracker.position);
             if (anchorScreen.z <= 0f)
             {
                 SetFloorHintVisibility(false);
@@ -598,11 +608,24 @@ namespace Twinny.Mobile.Samples
         public void OnEnterDemoMode()
         {
             _isDemoModeActive = true;
+            _isFloorHintReadyToShow = false;
             SetFloorHintVisibility(false);
         }
         public void OnExitDemoMode()
         {
             _isDemoModeActive = false;
+        }
+
+        public void OnPOIFocused()
+        {
+            if (_selectedFloor == null)
+                return;
+
+            _isFloorHintReadyToShow = true;
+            EnsureFloorHintCreated();
+            RefreshFloorHintContent();
+            SetFloorHintVisibility(true);
+            UpdateFloorHintPosition();
         }
 
         public void OnExperienceLoaded()

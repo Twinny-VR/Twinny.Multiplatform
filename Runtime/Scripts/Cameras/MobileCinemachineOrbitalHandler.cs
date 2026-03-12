@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections;
 using Concept.Core;
 using Twinny.Core.Input;
-using Twinny.Mobile.Interactables;
 using UnityEngine;
 using Unity.Cinemachine;
 using UnityEngine.SceneManagement;
@@ -55,6 +54,8 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private float _rotationTransitionSpeed = 270f;
         [SerializeField] private float _rotationTransitionEpsilon = 0.2f;
         [SerializeField] private bool _moveLookAtWithFloorTarget = true;
+        [SerializeField] private float _floorTargetTransitionSpeed = 14.4f;
+        [SerializeField] private float _floorTargetTransitionEpsilon = 0.01f;
         [SerializeField] private bool _enablePanLimit;
         [SerializeField] private float _maxPanDistance = 10f;
         [SerializeField] private Vector2 _verticalAxisLimits = new Vector2(-80f, 80f);
@@ -75,6 +76,7 @@ namespace Twinny.Mobile.Cameras
         private CinemachineDeoccluder m_deoccluder;
         private float _defaultDeoccluderRadius;
         private bool _hasDefaultDeoccluderRadius;
+        private bool _restoreDeoccluderAfterFloorTransition;
 
         private PropertyInfo _radiusProperty;
         private FieldInfo _radiusField;
@@ -98,12 +100,20 @@ namespace Twinny.Mobile.Cameras
         private bool _isRadiusTransitioning;
         private float _targetRadius;
         private float _radiusTransitionVelocity;
+        private bool _deferRadiusClampUntilFloorRadiusSettles;
         private bool _isRotationTransitioning;
+        private bool _hasPendingRotationTransition;
         private float _targetHorizontalAxis;
         private float _targetVerticalAxis;
+        private float _rotationHorizontalVelocity;
+        private float _rotationVerticalVelocity;
+        private bool _isFloorTargetTransitioning;
+        private Vector3 _floorTargetStartPosition;
+        private Vector3 _targetPanPosition;
         private CinemachinePOI _activePoi;
         private Transform _activeTrackingTarget;
         private CinemachinePOI _trackingTargetPoi;
+        private bool _notifyPoiFocusedOnTransitionComplete;
 
         private struct SuspendedHardLookState
         {
@@ -117,8 +127,10 @@ namespace Twinny.Mobile.Cameras
             RefreshTargetOverrides();
             EnforceRotationLockWhilePanning();
             UpdatePanReturn();
+            UpdateFloorTargetTransition();
             UpdateRadiusTransition();
             UpdateRotationTransition();
+            TryNotifyPoiFocused();
         }
 
         private void OnEnable()
@@ -157,10 +169,25 @@ namespace Twinny.Mobile.Cameras
             CacheOrbitalMembers();
         }
 
-        public void OnPrimaryDown(float x, float y) { }
-        public void OnPrimaryUp(float x, float y) { }
+        public void OnPrimaryDown(float x, float y)
+        {
+            if (IsInputBlockedDuringTransition())
+                return;
+
+            // Defensive recovery for editor/emulator edge cases where pan release was lost.
+            if (_isPanning)
+                EndPan(skipReturnToOrigin: true);
+        }
+        public void OnPrimaryUp(float x, float y)
+        {
+            if (IsInputBlockedDuringTransition())
+                return;
+        }
         public void OnSelect(SelectionData selection)
         {
+            if (IsInputBlockedDuringTransition())
+                return;
+
             if (selection.Target == null) return;
 
             Floor floor = selection.Target.GetComponentInParent<Floor>();
@@ -178,11 +205,17 @@ namespace Twinny.Mobile.Cameras
 
         public void OnPrimaryDrag(float dx, float dy)
         {
+            if (IsInputBlockedDuringTransition())
+                return;
+
             ApplyRotation(dx, dy);
         }
 
         public void OnZoom(float delta)
         {
+            if (IsInputBlockedDuringTransition())
+                return;
+
             ApplyZoom(delta);
         }
 
@@ -204,6 +237,13 @@ namespace Twinny.Mobile.Cameras
 
         public void OnTwoFingerSwipe(Vector2 direction, Vector2 startPosition)
         {
+            if (IsInputBlockedDuringTransition())
+            {
+                if (_isPanning)
+                    EndPan(skipReturnToOrigin: true);
+                return;
+            }
+
             if (!IsActiveCamera()) return;
             if (direction.sqrMagnitude <= 0.0001f)
             {
@@ -257,6 +297,8 @@ namespace Twinny.Mobile.Cameras
         public void OnExitMockupMode() => ApplyMode(false);
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
+
+        public void OnPOIFocused() { }
 
         private void ApplyRotation(float dx, float dy)
         {
@@ -578,7 +620,7 @@ namespace Twinny.Mobile.Cameras
         {
             Transform trackingTarget = GetTrackingTarget();
             _trackingTargetPoi = trackingTarget != null ? trackingTarget.GetComponent<CinemachinePOI>() : null;
-            CinemachinePOI poi = _pointOfInterest != null ? _pointOfInterest : _trackingTargetPoi;
+            CinemachinePOI poi = ResolveActivePointOfInterest(trackingTarget);
             bool targetChanged = _activeTrackingTarget != trackingTarget;
             if (!forceRefresh && _activePoi == poi && !targetChanged) return;
 
@@ -594,6 +636,22 @@ namespace Twinny.Mobile.Cameras
                     callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
                 );
             }
+        }
+
+        private CinemachinePOI ResolveActivePointOfInterest(Transform trackingTarget)
+        {
+            if (_pointOfInterest != null)
+                return _pointOfInterest;
+
+            if (_selectedFloor != null)
+            {
+                if (!_selectedFloor.UseFocusPoint || _selectedFloor.TrackerPoint == null)
+                    return null;
+
+                return _selectedFloor.TrackerPoint;
+            }
+
+            return trackingTarget != null ? trackingTarget.GetComponent<CinemachinePOI>() : null;
         }
 
         private void ApplyPoiOverrides(CinemachinePOI poi)
@@ -643,7 +701,7 @@ namespace Twinny.Mobile.Cameras
                 _orbitalFollow.VerticalAxis = vertical;
             }
 
-            if (!_isRadiusTransitioning)
+            if (!_isRadiusTransitioning && !_deferRadiusClampUntilFloorRadiusSettles)
             {
                 float radius = GetRadius();
                 if (!float.IsNaN(radius))
@@ -689,8 +747,28 @@ namespace Twinny.Mobile.Cameras
             m_deoccluder.AvoidObstacles = avoidObstacles;
         }
 
+        private void SetDeoccluderEnabledForFloorTransition(bool enabled)
+        {
+            if (m_deoccluder == null) return;
+
+            if (!enabled)
+            {
+                _restoreDeoccluderAfterFloorTransition = m_deoccluder.enabled;
+                m_deoccluder.enabled = false;
+                return;
+            }
+
+            if (_restoreDeoccluderAfterFloorTransition)
+                m_deoccluder.enabled = true;
+
+            _restoreDeoccluderAfterFloorTransition = false;
+        }
+
         private float GetRadius()
         {
+            if (_orbitalFollow != null)
+                return _orbitalFollow.Radius;
+
             if (_radiusProperty != null)
                 return (float)_radiusProperty.GetValue(_orbitalFollow);
 
@@ -702,6 +780,12 @@ namespace Twinny.Mobile.Cameras
 
         private void SetRadius(float value)
         {
+            if (_orbitalFollow != null)
+            {
+                _orbitalFollow.Radius = value;
+                return;
+            }
+
             if (_radiusProperty != null)
             {
                 _radiusProperty.SetValue(_orbitalFollow, value);
@@ -747,48 +831,62 @@ namespace Twinny.Mobile.Cameras
             Transform panTarget = GetTrackingTarget();
             if (panTarget == null) return;
             if (floor == null) return;
+            CinemachinePOI targetPoi = floor.TrackerPoint;
+            Floor previousFloor = _selectedFloor;
 
-            _pointOfInterest = floor.TargetTransform != null
-                ? floor.TargetTransform.GetComponent<CinemachinePOI>()
-                : null;
+            _selectedFloor = floor;
+            _pointOfInterest = floor.UseFocusPoint ? targetPoi : null;
+            _deferRadiusClampUntilFloorRadiusSettles = true;
+            RefreshTargetOverrides(forceRefresh: true);
             ApplyDeoccluderRadiusOverride(floor);
 
-            if (_selectedFloor != null && _selectedFloor != floor)
-                _selectedFloor.Unselect();
+            if (previousFloor != null && previousFloor != floor)
+                previousFloor.Unselect();
 
             _isReturningPan = false;
             _panReturnVelocity = Vector3.zero;
             _isRotationTransitioning = false;
-            SuspendHardLookWhilePanning();
+            _rotationHorizontalVelocity = 0f;
+            _rotationVerticalVelocity = 0f;
+            RestoreHardLookAfterPan();
+            SetDeoccluderEnabledForFloorTransition(false);
 
-            Vector3 previousPanPosition = panTarget.position;
-            panTarget.position = floor.TargetPosition;
+            _floorTargetStartPosition = panTarget.position;
+            _targetPanPosition = floor.TargetPosition;
+            _isFloorTargetTransitioning = true;
+            _notifyPoiFocusedOnTransitionComplete = true;
 
-            _panOriginPosition = panTarget.position;
-            _initialPanTargetPosition = panTarget.position;
+            _panOriginPosition = _targetPanPosition;
+            _initialPanTargetPosition = _targetPanPosition;
             _hasInitialPosition = true;
 
-            _selectedFloor = floor;
             _selectedFloor.Select();
 
-            float clampedRadius = Mathf.Clamp(floor.TargetRadius, _radiusLimits.x, _radiusLimits.y);
+            float desiredRadius = targetPoi != null ? targetPoi.TargetRadius : GetRadius();
+            float clampedRadius = Mathf.Clamp(desiredRadius, _radiusLimits.x, _radiusLimits.y);
             _targetRadius = clampedRadius;
             _isRadiusTransitioning = true;
             _radiusTransitionVelocity = 0f;
 
-            if (_applyFloorRotationOnSelect)
+            bool shouldApplyRotationOverride = _applyFloorRotationOnSelect || (targetPoi != null && targetPoi.OverrideRotation);
+            if (shouldApplyRotationOverride)
             {
                 Vector3 targetEuler = floor.TargetRotation.eulerAngles;
-                _targetHorizontalAxis = NormalizeSignedAngle(targetEuler.y);
-                _targetVerticalAxis = Mathf.Clamp(
-                    NormalizeSignedAngle(targetEuler.x),
-                    _verticalAxisLimits.x,
-                    _verticalAxisLimits.y
-                );
+                float targetPanDegrees = targetPoi != null && targetPoi.HasTargetPanOverride
+                    ? Mathf.Rad2Deg * targetPoi.TargetPan
+                    : NormalizeSignedAngle(targetEuler.y);
+                float targetTiltDegrees = targetPoi != null && targetPoi.HasTargetTiltOverride
+                    ? Mathf.Rad2Deg * targetPoi.TargetTilt
+                    : NormalizeSignedAngle(targetEuler.x);
+
+                _targetHorizontalAxis = NormalizeSignedAngle(targetPanDegrees);
+                _targetVerticalAxis = Mathf.Clamp(targetTiltDegrees, _verticalAxisLimits.x, _verticalAxisLimits.y);
+                _hasPendingRotationTransition = false;
                 _isRotationTransitioning = true;
             }
             else
             {
+                _hasPendingRotationTransition = false;
                 _isRotationTransitioning = false;
             }
 
@@ -796,6 +894,8 @@ namespace Twinny.Mobile.Cameras
             CallbackHub.CallAction<IMobileUICallbacks>(
                 callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
             );
+
+            TryNotifyPoiFocused();
         }
 
         private void ApplyDeoccluderRadiusOverride(Floor floor)
@@ -813,8 +913,8 @@ namespace Twinny.Mobile.Cameras
             if (!_hasDefaultDeoccluderRadius) return;
 
             CinemachinePOI focusPoi = null;
-            if (floor != null && floor.UseFocusPoint && floor.FocusPoint != null)
-                focusPoi = floor.FocusPoint.GetComponent<CinemachinePOI>();
+            if (floor != null && floor.UseFocusPoint)
+                focusPoi = floor.TrackerPoint;
 
             if (focusPoi != null && focusPoi.HasDeoccluderRadiusOverride)
             {
@@ -833,6 +933,7 @@ namespace Twinny.Mobile.Cameras
             if (float.IsNaN(currentRadius))
             {
                 _isRadiusTransitioning = false;
+                _deferRadiusClampUntilFloorRadiusSettles = false;
                 WarnMissingRadiusOnce();
                 return;
             }
@@ -866,7 +967,31 @@ namespace Twinny.Mobile.Cameras
                 SetRadius(_targetRadius);
                 _isRadiusTransitioning = false;
                 _radiusTransitionVelocity = 0f;
+                _deferRadiusClampUntilFloorRadiusSettles = false;
                 // Test mode: keep HardLook suspended after floor transition.
+            }
+        }
+
+        private void UpdateFloorTargetTransition()
+        {
+            if (!_isFloorTargetTransitioning) return;
+
+            Transform panTarget = GetTrackingTarget();
+            if (panTarget == null)
+            {
+                _isFloorTargetTransitioning = false;
+                SetDeoccluderEnabledForFloorTransition(true);
+                return;
+            }
+
+            float step = Mathf.Max(_floorTargetTransitionSpeed, 0f) * Time.deltaTime;
+            panTarget.position = Vector3.MoveTowards(panTarget.position, _targetPanPosition, step);
+
+            if (Vector3.SqrMagnitude(panTarget.position - _targetPanPosition) <= _floorTargetTransitionEpsilon * _floorTargetTransitionEpsilon)
+            {
+                panTarget.position = _targetPanPosition;
+                _isFloorTargetTransitioning = false;
+                SetDeoccluderEnabledForFloorTransition(true);
             }
         }
 
@@ -876,17 +1001,37 @@ namespace Twinny.Mobile.Cameras
             if (_orbitalFollow == null)
             {
                 _isRotationTransitioning = false;
+                _rotationHorizontalVelocity = 0f;
+                _rotationVerticalVelocity = 0f;
                 return;
             }
-
-            float step = Mathf.Max(_rotationTransitionSpeed, 0f) * Time.deltaTime;
 
             var horizontal = _orbitalFollow.HorizontalAxis;
             var vertical = _orbitalFollow.VerticalAxis;
 
             float currentHorizontal = NormalizeSignedAngle(horizontal.Value);
-            float nextHorizontal = Mathf.MoveTowardsAngle(currentHorizontal, _targetHorizontalAxis, step);
-            float nextVertical = Mathf.MoveTowards(vertical.Value, _targetVerticalAxis, step);
+            float smoothTime = Mathf.Clamp(90f / Mathf.Max(_rotationTransitionSpeed, 0.01f), 0.08f, 0.35f);
+            if (_isFloorTargetTransitioning)
+            {
+                float progress = GetFloorTargetTransitionProgress();
+                smoothTime *= Mathf.Lerp(2.2f, 1f, progress);
+            }
+            float nextHorizontal = Mathf.SmoothDampAngle(
+                currentHorizontal,
+                _targetHorizontalAxis,
+                ref _rotationHorizontalVelocity,
+                smoothTime,
+                Mathf.Infinity,
+                Time.deltaTime
+            );
+            float nextVertical = Mathf.SmoothDamp(
+                vertical.Value,
+                _targetVerticalAxis,
+                ref _rotationVerticalVelocity,
+                smoothTime,
+                Mathf.Infinity,
+                Time.deltaTime
+            );
 
             horizontal.Value = nextHorizontal;
             vertical.Value = nextVertical;
@@ -903,14 +1048,57 @@ namespace Twinny.Mobile.Cameras
                 _orbitalFollow.HorizontalAxis = horizontal;
                 _orbitalFollow.VerticalAxis = vertical;
                 _isRotationTransitioning = false;
+                _rotationHorizontalVelocity = 0f;
+                _rotationVerticalVelocity = 0f;
                 // Test mode: keep HardLook suspended after floor transition.
             }
+        }
+
+        private float GetFloorTargetTransitionProgress()
+        {
+            float totalDistance = Vector3.Distance(_floorTargetStartPosition, _targetPanPosition);
+            if (totalDistance <= _floorTargetTransitionEpsilon)
+                return 1f;
+
+            Transform panTarget = GetTrackingTarget();
+            if (panTarget == null)
+                return 1f;
+
+            float remainingDistance = Vector3.Distance(panTarget.position, _targetPanPosition);
+            return Mathf.Clamp01(1f - (remainingDistance / totalDistance));
         }
 
         private static float NormalizeSignedAngle(float angle)
         {
             if (angle > 180f) angle -= 360f;
             return angle;
+        }
+
+        private bool IsTransitionActive()
+        {
+            return _isFloorTargetTransitioning ||
+                   _isRadiusTransitioning ||
+                   _isRotationTransitioning ||
+                   _hasPendingRotationTransition;
+        }
+
+        private bool IsInputBlockedDuringTransition()
+        {
+            return IsActiveCamera() && IsTransitionActive();
+        }
+
+        private void TryNotifyPoiFocused()
+        {
+
+            if (!_notifyPoiFocusedOnTransitionComplete)
+                return;
+
+            if (IsTransitionActive())
+                return;
+
+            _selectedFloor?.Focus();
+            _notifyPoiFocusedOnTransitionComplete = false;
+            CallbackHub.CallAction<ITwinnyMobileCallbacks>(callback => callback.OnPOIFocused());
         }
 
 

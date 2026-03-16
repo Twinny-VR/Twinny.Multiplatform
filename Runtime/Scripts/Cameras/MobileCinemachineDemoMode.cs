@@ -68,7 +68,7 @@ namespace Twinny.Mobile.Cameras
             if (!IsActiveCamera()) return;
             if (_orbitalFollow == null) return;
 
-            CinemachinePOI activePoi = GetActivePointOfInterest();
+            CinemachineTracker activePoi = GetActivePointOfInterest();
             if (activePoi != null && activePoi.AvoidDemoMode)
             {
                 if (_isDemoActive)
@@ -213,17 +213,17 @@ namespace Twinny.Mobile.Cameras
                 _orbitalHandler = GetComponent<MobileCinemachineOrbitalHandler>();
         }
 
-        private CinemachinePOI GetActivePointOfInterest()
+        private CinemachineTracker GetActivePointOfInterest()
         {
             EnsureReferences();
             if (_orbitalHandler != null && _orbitalHandler.ActivePointOfInterest != null)
                 return _orbitalHandler.ActivePointOfInterest;
 
             Transform followTarget = _cinemachineCamera != null ? _cinemachineCamera.Follow : null;
-            return followTarget != null ? followTarget.GetComponent<CinemachinePOI>() : null;
+            return followTarget != null ? followTarget.GetComponent<CinemachineTracker>() : null;
         }
 
-        private float GetEffectiveIdleSeconds(CinemachinePOI activePoi)
+        private float GetEffectiveIdleSeconds(CinemachineTracker activePoi)
         {
             float idleSeconds = _idleSeconds;
             if (activePoi != null && activePoi.HasDemoIdleSecondsOverride)

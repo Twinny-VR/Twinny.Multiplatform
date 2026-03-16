@@ -9,8 +9,8 @@ namespace Twinny.Mobile.Editor.Navigation
     [CustomEditor(typeof(MobileFpsNavigation))]
     public class MobileFpsNavigationEditor : UnityEditor.Editor
     {
-        private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uxml";
-        private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/MobileCinemachineSharedEditor.uss";
+        private const string UxmlPath = "Packages/com.twinny.twe26/Editor/Shared/ComponentInspectorTemplate.uxml";
+        private const string UssPath = "Packages/com.twinny.twe26/Editor/Shared/ComponentInspectorTemplate.uss";
         private const string IconsPath = "Packages/com.twinny.mobile/Editor/Cameras/Icons/icons.png";
         private const string IconName = "icons_2";
         private const string TitleFontPath = "Packages/com.twinny.twe26/Editor/SetupGuide/Resources/Fonts/DINNextLTPro-Condensed.otf";
@@ -29,9 +29,10 @@ namespace Twinny.Mobile.Editor.Navigation
             ApplyHeroIcon(root);
             ApplyTitleFont(root);
 
-            AddNavigationFields(root.Q<VisualElement>("handlerFields"));
-            AddRuntimeFields(root.Q<VisualElement>("cinemachineFields"));
-            AddNotes(root.Q<VisualElement>("actionsFields"));
+            VisualElement contentRoot = GetContentRoot(root);
+            AddNavigationFields(CreateSection(contentRoot, "Navigation"));
+            AddRuntimeFields(CreateSection(contentRoot, "Runtime"));
+            AddNotes(CreateSection(contentRoot, "Notes"));
 
             return root;
         }
@@ -43,6 +44,28 @@ namespace Twinny.Mobile.Editor.Navigation
 
             if (_styleSheet == null)
                 _styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(UssPath);
+        }
+
+        private static VisualElement GetContentRoot(VisualElement root)
+        {
+            return root.Q<VisualElement>(className: "root") ?? root;
+        }
+
+        private static VisualElement CreateSection(VisualElement root, string title)
+        {
+            var section = new VisualElement();
+            section.AddToClassList("section");
+
+            var label = new Label(title);
+            label.AddToClassList("section-title");
+            section.Add(label);
+
+            var fields = new VisualElement();
+            fields.AddToClassList("fields");
+            section.Add(fields);
+
+            root.Add(section);
+            return fields;
         }
 
         private void ApplyTitle(VisualElement root)

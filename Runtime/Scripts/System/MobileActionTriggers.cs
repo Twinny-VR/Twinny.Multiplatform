@@ -1,5 +1,6 @@
 using Concept.Core;
 using System.Collections.Generic;
+using Twinny.Mobile.Interactables;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -34,7 +35,9 @@ namespace Twinny.Mobile
             ExitMockupMode,
             EnterDemoMode,
             ExitDemoMode,
-            POIFocused
+            FloorSelected,
+            FloorFocused,
+            FloorUnselected
 
         }
 
@@ -95,7 +98,9 @@ namespace Twinny.Mobile
         public void OnEnterMockupMode() => TriggerAction(MobileAction.ActionType.EnterMockupMode);
         public void OnExitMockupMode() => TriggerAction(MobileAction.ActionType.ExitMockupMode);
         public void OnEnterDemoMode() => TriggerAction(MobileAction.ActionType.EnterDemoMode);
-        public void OnPOIFocused() => TriggerAction(MobileAction.ActionType.POIFocused);
+        public void OnFloorSelected(Floor floor) => TriggerAction(MobileAction.ActionType.FloorSelected);
+        public void OnFloorFocused(Floor floor) => TriggerAction(MobileAction.ActionType.FloorFocused);
+        public void OnFloorUnselected(Floor floor) => TriggerAction(MobileAction.ActionType.FloorUnselected);
         public void OnExitDemoMode() => TriggerAction(MobileAction.ActionType.ExitDemoMode);
     }
 }

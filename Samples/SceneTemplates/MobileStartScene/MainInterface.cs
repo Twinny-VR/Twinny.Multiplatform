@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Twinny.Core.Input;
 using Twinny.Mobile.Cameras;
+using Twinny.Mobile.Interactables;
 using Twinny.Mobile.Navigation;
 using Twinny.Shaders;
 using UnityEngine;
@@ -233,9 +234,12 @@ namespace Twinny.Mobile.Samples
             if (cam == null) cam = FindAnyObjectByType<Camera>();
             if (cam == null) return;
 
-            Transform tracker = _selectedFloor.TrackerPoint != null
-                ? _selectedFloor.TrackerPoint.transform
-                : _selectedFloor.TargetTransform;
+            Transform tracker = _selectedFloor.transform;
+            if(_selectedFloor is CinemachineFloor cmFloor)
+                 tracker = 
+                cmFloor.TrackerPoint != null
+                ? cmFloor.TrackerPoint.transform
+                : cmFloor.TargetTransform;
             Vector3 anchorScreen = cam.WorldToScreenPoint(tracker.position);
             if (anchorScreen.z <= 0f)
             {
@@ -288,7 +292,7 @@ namespace Twinny.Mobile.Samples
 
             CallbackHub.CallAction<IMobileUICallbacks>(callback =>
             {
-                if (data.SceneOpenMode == Floor.FloorSceneOpenMode.Mockup)
+                if (data.SceneOpenMode == FloorData.FloorSceneOpenMode.Mockup)
                     callback.OnMockupRequested(data.ImmersionSceneName);
                 else
                     callback.OnImmersiveRequested(data.ImmersionSceneName);
@@ -616,7 +620,8 @@ namespace Twinny.Mobile.Samples
             _isDemoModeActive = false;
         }
 
-        public void OnPOIFocused()
+        public void OnFloorSelected(Floor floor) { }
+        public void OnFloorFocused(Floor floor)
         {
             if (_selectedFloor == null)
                 return;
@@ -627,6 +632,7 @@ namespace Twinny.Mobile.Samples
             SetFloorHintVisibility(true);
             UpdateFloorHintPosition();
         }
+        public void OnFloorUnselected(Floor floor) { }
 
         public void OnExperienceLoaded()
         {

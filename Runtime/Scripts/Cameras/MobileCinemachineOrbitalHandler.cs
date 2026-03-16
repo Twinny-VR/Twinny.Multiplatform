@@ -31,7 +31,7 @@ namespace Twinny.Mobile.Cameras
         [Header("Cinemachine")]
         [SerializeField] private CinemachineCamera _cinemachineCamera;
         [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
-        [SerializeField] private CinemachinePOI _pointOfInterest;
+        [SerializeField] private CinemachineTracker _pointOfInterest;
 
         [Header("Mode")]
         [SerializeField] private int _activePriority = 20;
@@ -96,7 +96,7 @@ namespace Twinny.Mobile.Cameras
         private bool _isHardLookSuspended;
         private Transform _suspendedLookAtTarget;
         private Coroutine _hardLookRestoreRoutine;
-        private Floor _selectedFloor;
+        private CinemachineFloor _selectedFloor;
         private bool _isRadiusTransitioning;
         private float _targetRadius;
         private float _radiusTransitionVelocity;
@@ -110,9 +110,9 @@ namespace Twinny.Mobile.Cameras
         private bool _isFloorTargetTransitioning;
         private Vector3 _floorTargetStartPosition;
         private Vector3 _targetPanPosition;
-        private CinemachinePOI _activePoi;
+        private CinemachineTracker _activePoi;
         private Transform _activeTrackingTarget;
-        private CinemachinePOI _trackingTargetPoi;
+        private CinemachineTracker _trackingTargetPoi;
         private bool _notifyPoiFocusedOnTransitionComplete;
 
         private struct SuspendedHardLookState
@@ -130,7 +130,7 @@ namespace Twinny.Mobile.Cameras
             UpdateFloorTargetTransition();
             UpdateRadiusTransition();
             UpdateRotationTransition();
-            TryNotifyPoiFocused();
+            TryNotifyFloorFocused();
         }
 
         private void OnEnable()
@@ -190,10 +190,10 @@ namespace Twinny.Mobile.Cameras
 
             if (selection.Target == null) return;
 
-            Floor floor = selection.Target.GetComponentInParent<Floor>();
+            CinemachineFloor floor = selection.Target.GetComponentInParent<CinemachineFloor>();
             if (floor == null) return;
 
-            MoveTrackingTargetToFloor(floor);
+            floor.Select();
         }
         public void OnCancel()
         {
@@ -219,7 +219,7 @@ namespace Twinny.Mobile.Cameras
             ApplyZoom(delta);
         }
 
-        public CinemachinePOI PointOfInterest
+        public CinemachineTracker PointOfInterest
         {
             get => _pointOfInterest;
             set
@@ -230,7 +230,7 @@ namespace Twinny.Mobile.Cameras
             }
         }
 
-        public CinemachinePOI ActivePointOfInterest => _activePoi;
+        public CinemachineTracker ActivePointOfInterest => _activePoi;
 
         public void OnTwoFingerTap(Vector2 position) { }
         public void OnTwoFingerLongPress(Vector2 position) { }
@@ -298,7 +298,15 @@ namespace Twinny.Mobile.Cameras
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
 
-        public void OnPOIFocused() { }
+        public void OnFloorSelected(Interactables.Floor floor)
+        {
+            if (floor is not CinemachineFloor cinematicFloor)
+                return;
+
+            MoveTrackingTargetToFloor(cinematicFloor);
+        }
+        public void OnFloorFocused(Interactables.Floor floor) { }
+        public void OnFloorUnselected(Interactables.Floor floor) { }
 
         private void ApplyRotation(float dx, float dy)
         {
@@ -619,8 +627,8 @@ namespace Twinny.Mobile.Cameras
         private void RefreshTargetOverrides(bool forceRefresh = false)
         {
             Transform trackingTarget = GetTrackingTarget();
-            _trackingTargetPoi = trackingTarget != null ? trackingTarget.GetComponent<CinemachinePOI>() : null;
-            CinemachinePOI poi = ResolveActivePointOfInterest(trackingTarget);
+            _trackingTargetPoi = trackingTarget != null ? trackingTarget.GetComponent<CinemachineTracker>() : null;
+            CinemachineTracker poi = ResolveActivePointOfInterest(trackingTarget);
             bool targetChanged = _activeTrackingTarget != trackingTarget;
             if (!forceRefresh && _activePoi == poi && !targetChanged) return;
 
@@ -638,7 +646,7 @@ namespace Twinny.Mobile.Cameras
             }
         }
 
-        private CinemachinePOI ResolveActivePointOfInterest(Transform trackingTarget)
+        private CinemachineTracker ResolveActivePointOfInterest(Transform trackingTarget)
         {
             if (_pointOfInterest != null)
                 return _pointOfInterest;
@@ -651,10 +659,10 @@ namespace Twinny.Mobile.Cameras
                 return _selectedFloor.TrackerPoint;
             }
 
-            return trackingTarget != null ? trackingTarget.GetComponent<CinemachinePOI>() : null;
+            return trackingTarget != null ? trackingTarget.GetComponent<CinemachineTracker>() : null;
         }
 
-        private void ApplyPoiOverrides(CinemachinePOI poi)
+        private void ApplyPoiOverrides(CinemachineTracker poi)
         {
             _verticalAxisLimits = _defaultVerticalAxisLimits;
             _radiusLimits = _defaultRadiusLimits;
@@ -826,13 +834,13 @@ namespace Twinny.Mobile.Cameras
             }
         }
 
-        private void MoveTrackingTargetToFloor(Floor floor)
+        private void MoveTrackingTargetToFloor(CinemachineFloor floor)
         {
             Transform panTarget = GetTrackingTarget();
             if (panTarget == null) return;
             if (floor == null) return;
-            CinemachinePOI targetPoi = floor.TrackerPoint;
-            Floor previousFloor = _selectedFloor;
+            CinemachineTracker targetPoi = floor.TrackerPoint;
+            CinemachineFloor previousFloor = _selectedFloor;
 
             _selectedFloor = floor;
             _pointOfInterest = floor.UseFocusPoint ? targetPoi : null;
@@ -841,7 +849,10 @@ namespace Twinny.Mobile.Cameras
             ApplyDeoccluderRadiusOverride(floor);
 
             if (previousFloor != null && previousFloor != floor)
+            {
+
                 previousFloor.Unselect();
+            }
 
             _isReturningPan = false;
             _panReturnVelocity = Vector3.zero;
@@ -859,8 +870,6 @@ namespace Twinny.Mobile.Cameras
             _panOriginPosition = _targetPanPosition;
             _initialPanTargetPosition = _targetPanPosition;
             _hasInitialPosition = true;
-
-            _selectedFloor.Select();
 
             float desiredRadius = targetPoi != null ? targetPoi.TargetRadius : GetRadius();
             float clampedRadius = Mathf.Clamp(desiredRadius, _radiusLimits.x, _radiusLimits.y);
@@ -895,10 +904,10 @@ namespace Twinny.Mobile.Cameras
                 callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
             );
 
-            TryNotifyPoiFocused();
+            TryNotifyFloorFocused();
         }
 
-        private void ApplyDeoccluderRadiusOverride(Floor floor)
+        private void ApplyDeoccluderRadiusOverride(CinemachineFloor floor)
         {
             if (!_hasDefaultDeoccluderRadius)
             {
@@ -912,7 +921,7 @@ namespace Twinny.Mobile.Cameras
 
             if (!_hasDefaultDeoccluderRadius) return;
 
-            CinemachinePOI focusPoi = null;
+            CinemachineTracker focusPoi = null;
             if (floor != null && floor.UseFocusPoint)
                 focusPoi = floor.TrackerPoint;
 
@@ -1087,7 +1096,7 @@ namespace Twinny.Mobile.Cameras
             return IsActiveCamera() && IsTransitionActive();
         }
 
-        private void TryNotifyPoiFocused()
+        private void TryNotifyFloorFocused()
         {
 
             if (!_notifyPoiFocusedOnTransitionComplete)
@@ -1098,7 +1107,6 @@ namespace Twinny.Mobile.Cameras
 
             _selectedFloor?.Focus();
             _notifyPoiFocusedOnTransitionComplete = false;
-            CallbackHub.CallAction<ITwinnyMobileCallbacks>(callback => callback.OnPOIFocused());
         }
 
 

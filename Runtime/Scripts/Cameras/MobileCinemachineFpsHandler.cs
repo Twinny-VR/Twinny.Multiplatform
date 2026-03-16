@@ -1,5 +1,6 @@
 using Concept.Core;
 using Twinny.Core.Input;
+using Twinny.Mobile.Interactables;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -122,7 +123,9 @@ namespace Twinny.Mobile.Cameras
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
-         public void OnPOIFocused() { }
+         public void OnFloorSelected(Floor floor) { }
+         public void OnFloorFocused(Floor floor) { }
+         public void OnFloorUnselected(Floor floor) { }
 
         public void OnMaxWallHeightRequested(float height) { }
         public void OnImmersiveRequested(string sceneName) { }

@@ -1,4 +1,5 @@
 using Twinny.Core;
+using Twinny.Mobile.Interactables;
 using UnityEngine;
 
 namespace Twinny.Mobile
@@ -51,6 +52,8 @@ namespace Twinny.Mobile
         /// </summary>
         void OnEnterDemoMode();
         void OnExitDemoMode();
-        void OnPOIFocused();
+        void OnFloorFocused(Floor floor);
+        void OnFloorSelected(Floor floor);
+        void OnFloorUnselected(Floor floor);
     }
 }

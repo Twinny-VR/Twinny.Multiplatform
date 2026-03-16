@@ -1,0 +1,15 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Packages/com.twinny.mobile/Samples/SceneTemplates/MobileMockupScene/MockupInterfaceStyles.uss?fileID=7433441132597879392&amp;guid=eca91328d5063d9479594b43c520982b&amp;type=3#MockupInterfaceStyles"/>
+    <ui:VisualElement name="MockupInterfaceRoot" picking-mode="Ignore" class="mockup-interface-root">
+        <ui:VisualElement name="SidebarRoot" picking-mode="Ignore" class="mockup-sidebar">
+            <ui:ScrollView mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto" name="FloorCardList" picking-mode="Ignore" class="mockup-card-list">
+                <ui:VisualElement name="MockupCardTemplate" class="mockup-card mockup-card--enabled" style="display: flex;">
+                    <ui:VisualElement class="mockup-card__content">
+                        <ui:Label text="Piscina" class="mockup-card__title"/>
+                        <ui:Label text="Area de lazer" class="mockup-card__subtitle"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

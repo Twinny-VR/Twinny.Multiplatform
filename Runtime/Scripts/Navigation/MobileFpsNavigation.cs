@@ -1,6 +1,7 @@
 using System;
 using Concept.Core;
 using Twinny.Core.Input;
+using Twinny.Mobile.Interactables;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -151,7 +152,9 @@ namespace Twinny.Mobile.Navigation
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
-        public void OnPOIFocused() { }
+        public void OnFloorSelected(Floor floor) { }
+        public void OnFloorFocused(Floor floor) { }
+        public void OnFloorUnselected(Floor floor) { }
 
 
         private bool IsInteractable(Transform target)

@@ -1,4 +1,5 @@
 using Twinny.Mobile.Cameras;
+using Twinny.Mobile.Interactables;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -66,7 +67,7 @@ namespace Twinny.Mobile.Samples
                 return;
             }
 
-            bool useMockupIcon = floor.Data.SceneOpenMode == Floor.FloorSceneOpenMode.Mockup;
+            bool useMockupIcon = floor.Data.SceneOpenMode == FloorData.FloorSceneOpenMode.Mockup;
             SetInfo(floor.Data.Title, floor.Data.Subtitle, floor.Data.HasImmersionScene, useMockupIcon);
         }
 

@@ -1,6 +1,7 @@
 using System.Runtime.Serialization;
 using Concept.Core;
 using Twinny.Core;
+using Twinny.Mobile.Interactables;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -127,7 +128,9 @@ namespace Twinny.Mobile
         public void OnExitMockupMode() { }
         public void OnEnterDemoMode() { }
         public void OnExitDemoMode() { }
-        public void OnPOIFocused() { }
+        public void OnFloorSelected(Floor floor) { }
+        public void OnFloorFocused(Floor floor) { }
+        public void OnFloorUnselected(Floor floor) { }
 
         public void OnTeleportToLandMark(int landMarkIndex)
         {

@@ -33,6 +33,7 @@ namespace Twinny.Mobile.Editor.Cameras
             VisualElement contentRoot = GetContentRoot(root);
             AddIdentityFields(CreateSection(contentRoot, "Identity"));
             AddCameraTargetFields(CreateSection(contentRoot, "Camera Target"));
+            AddAlphaClipFields(CreateSection(contentRoot, "Alpha Clipper"));
             AddEventFields(CreateSection(contentRoot, "Events"));
             AddComputedInfo(CreateSection(contentRoot, "Runtime Preview"));
 
@@ -132,6 +133,31 @@ namespace Twinny.Mobile.Editor.Cameras
             AddProperty(container, serializedObject.FindProperty("_onSelect"), serializedObject);
             AddProperty(container, serializedObject.FindProperty("_onFocused"), serializedObject);
             AddProperty(container, serializedObject.FindProperty("_onUnselect"), serializedObject);
+        }
+
+        private void AddAlphaClipFields(VisualElement container)
+        {
+            if (container == null) return;
+
+            SerializedProperty applyAlphaClipProp = serializedObject.FindProperty("_applyAlphaClip");
+            SerializedProperty alphaClipHeightProp = serializedObject.FindProperty("_alphaClipHeight");
+
+            AddProperty(container, applyAlphaClipProp, serializedObject);
+            if (applyAlphaClipProp == null || alphaClipHeightProp == null)
+                return;
+
+            var alphaClipHeightField = new PropertyField(alphaClipHeightProp);
+            alphaClipHeightField.Bind(serializedObject);
+            container.Add(alphaClipHeightField);
+
+            void RefreshAlphaClipVisibility()
+            {
+                serializedObject.Update();
+                alphaClipHeightField.style.display = applyAlphaClipProp.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            RefreshAlphaClipVisibility();
+            container.TrackPropertyValue(applyAlphaClipProp, _ => RefreshAlphaClipVisibility());
         }
 
         private void AddComputedInfo(VisualElement container)

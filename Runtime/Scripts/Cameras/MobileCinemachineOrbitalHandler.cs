@@ -6,6 +6,7 @@ using Twinny.Core.Input;
 using UnityEngine;
 using Unity.Cinemachine;
 using UnityEngine.SceneManagement;
+using Twinny.Shaders;
 
 namespace Twinny.Mobile.Cameras
 {
@@ -56,6 +57,10 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private bool _moveLookAtWithFloorTarget = true;
         [SerializeField] private float _floorTargetTransitionSpeed = 14.4f;
         [SerializeField] private float _floorTargetTransitionEpsilon = 0.01f;
+        [SerializeField] private float _floorTargetLongDistance = 10f;
+        [SerializeField] private float _floorTargetMaxSpeedMultiplier = 3f;
+        [SerializeField] private float _floorTargetEaseOutDistance = 1.5f;
+        [SerializeField] private float _floorTargetEaseOutSmoothTime = 0.12f;
         [SerializeField] private bool _enablePanLimit;
         [SerializeField] private float _maxPanDistance = 10f;
         [SerializeField] private Vector2 _verticalAxisLimits = new Vector2(-80f, 80f);
@@ -65,7 +70,6 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private bool _lockPanY = true;
         [SerializeField] private bool _lockPanZ;
         [SerializeField] private Transform _customPanTarget;
-        [SerializeField] private float _maxWallHeight = 3.0f;
         private Vector2 _defaultVerticalAxisLimits;
         private Vector2 _defaultRadiusLimits;
         private float _defaultMaxPanDistance;
@@ -110,6 +114,7 @@ namespace Twinny.Mobile.Cameras
         private bool _isFloorTargetTransitioning;
         private Vector3 _floorTargetStartPosition;
         private Vector3 _targetPanPosition;
+        private Vector3 _floorTargetTransitionVelocity;
         private CinemachineTracker _activePoi;
         private Transform _activeTrackingTarget;
         private CinemachineTracker _trackingTargetPoi;
@@ -591,7 +596,7 @@ namespace Twinny.Mobile.Cameras
 
         private void ApplyMode(bool isActive)
         {
-            if(isActive) CallbackHub.CallAction<IMobileUICallbacks>(callback => callback.OnMaxWallHeightRequested(_maxWallHeight));
+            if(isActive) CallbackHub.CallAction<IMobileUICallbacks>(callback => callback.OnMaxWallHeightRequested(AlphaClipper.MinMaxWallHeight.y));
             _isModeActive = isActive;
             if (_cinemachineCamera != null)
                 _cinemachineCamera.Priority = isActive ? _activePriority : _inactivePriority;
@@ -641,7 +646,7 @@ namespace Twinny.Mobile.Cameras
             if (_isModeActive)
             {
                 CallbackHub.CallAction<IMobileUICallbacks>(
-                    callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
+                    callback => callback.OnMaxWallHeightRequested(AlphaClipper.MinMaxWallHeight.y)
                 );
             }
         }
@@ -864,6 +869,7 @@ namespace Twinny.Mobile.Cameras
 
             _floorTargetStartPosition = panTarget.position;
             _targetPanPosition = floor.TargetPosition;
+            _floorTargetTransitionVelocity = Vector3.zero;
             _isFloorTargetTransitioning = true;
             _notifyPoiFocusedOnTransitionComplete = true;
 
@@ -899,9 +905,9 @@ namespace Twinny.Mobile.Cameras
                 _isRotationTransitioning = false;
             }
 
-            _maxWallHeight = floor.MaxWallHeight;
+           // AlphaClipper.MaxWallHeight = floor.MaxWallHeight;
             CallbackHub.CallAction<IMobileUICallbacks>(
-                callback => callback.OnMaxWallHeightRequested(_maxWallHeight)
+                callback => callback.OnMaxWallHeightRequested(AlphaClipper.MinMaxWallHeight.y)
             );
 
             TryNotifyFloorFocused();
@@ -989,17 +995,42 @@ namespace Twinny.Mobile.Cameras
             if (panTarget == null)
             {
                 _isFloorTargetTransitioning = false;
+                _floorTargetTransitionVelocity = Vector3.zero;
                 SetDeoccluderEnabledForFloorTransition(true);
                 return;
             }
 
-            float step = Mathf.Max(_floorTargetTransitionSpeed, 0f) * Time.deltaTime;
-            panTarget.position = Vector3.MoveTowards(panTarget.position, _targetPanPosition, step);
+            float remainingDistance = Vector3.Distance(panTarget.position, _targetPanPosition);
+            float totalDistance = Vector3.Distance(_floorTargetStartPosition, _targetPanPosition);
+            float distanceRatio = totalDistance <= 0.0001f
+                ? 1f
+                : Mathf.Clamp01(totalDistance / Mathf.Max(_floorTargetLongDistance, 0.0001f));
+            float speedMultiplier = Mathf.Lerp(1f, Mathf.Max(1f, _floorTargetMaxSpeedMultiplier), distanceRatio);
+
+            if (remainingDistance <= Mathf.Max(_floorTargetEaseOutDistance, _floorTargetTransitionEpsilon))
+            {
+                float smoothTime = Mathf.Max(0.01f, _floorTargetEaseOutSmoothTime);
+                panTarget.position = Vector3.SmoothDamp(
+                    panTarget.position,
+                    _targetPanPosition,
+                    ref _floorTargetTransitionVelocity,
+                    smoothTime,
+                    Mathf.Infinity,
+                    Time.deltaTime
+                );
+            }
+            else
+            {
+                float step = Mathf.Max(_floorTargetTransitionSpeed * speedMultiplier, 0f) * Time.deltaTime;
+                panTarget.position = Vector3.MoveTowards(panTarget.position, _targetPanPosition, step);
+                _floorTargetTransitionVelocity = Vector3.zero;
+            }
 
             if (Vector3.SqrMagnitude(panTarget.position - _targetPanPosition) <= _floorTargetTransitionEpsilon * _floorTargetTransitionEpsilon)
             {
                 panTarget.position = _targetPanPosition;
                 _isFloorTargetTransitioning = false;
+                _floorTargetTransitionVelocity = Vector3.zero;
                 SetDeoccluderEnabledForFloorTransition(true);
             }
         }

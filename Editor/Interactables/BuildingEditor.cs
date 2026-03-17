@@ -82,6 +82,7 @@ namespace Twinny.Mobile.Editor.Interactables
         {
             if (container == null) return;
             AddProperty(container, serializedObject.FindProperty("_floors"), serializedObject);
+            AddProperty(container, serializedObject.FindProperty("_showAllFloorsWhenUnselected"), serializedObject);
         }
 
         private void AddRuntimeInfo(VisualElement container)

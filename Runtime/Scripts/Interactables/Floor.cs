@@ -1,5 +1,6 @@
 using Concept.Core;
 using System;
+using Twinny.Shaders;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -37,9 +38,15 @@ namespace Twinny.Mobile.Interactables
         [SerializeField] private FloorData _data = new();
         public FloorData Data => _data ??= new FloorData();
 
+        /*
         [SerializeField] private float _maxWallHeight = 3f;
         public float MaxWallHeight => _maxWallHeight;
+        */
+        [SerializeField] private bool _applyAlphaClip;
+        [SerializeField] private float _alphaClipHeight = 3f;
 
+        public bool ApplyAlphaClip => _applyAlphaClip;
+        public float AlphaClipHeight => _alphaClipHeight;
 
         [Header("Events")]
         [SerializeField] private UnityEvent _onSelect;
@@ -50,6 +57,12 @@ namespace Twinny.Mobile.Interactables
 
         public virtual void Select()
         {
+            float targetCutoffHeight = _applyAlphaClip
+                ? _alphaClipHeight
+                : AlphaClipper.MinMaxWallHeight.y;
+
+            AlphaClipper.TransitionCutoffHeight(targetCutoffHeight);
+
             _onSelect?.Invoke();
             Selected?.Invoke(this);
             CallbackHub.CallAction<ITwinnyMobileCallbacks>(callback => callback.OnFloorSelected(this));

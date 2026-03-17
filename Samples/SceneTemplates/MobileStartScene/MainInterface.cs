@@ -160,8 +160,9 @@ namespace Twinny.Mobile.Samples
 
             if (_cutoffSlider != null)
             {
-                _cutoffSlider.lowValue = 0f;
+                ApplyCutoffSliderRange();
                 _cutoffSlider.pageSize = 0.001f;
+                SyncCutoffSliderAndShader(Shader.GetGlobalFloat("_CutoffHeight"));
             }
 
             if (_loadingOverlayRoot != null)
@@ -498,7 +499,7 @@ namespace Twinny.Mobile.Samples
 
         private void HandleCutoffChanged(ChangeEvent<float> evt)
         {
-            Shader.SetGlobalFloat("_CutoffHeight", evt.newValue);
+            SyncCutoffSliderAndShader(evt.newValue);
         }
 
         private void HandleCutoffPointerDown(PointerDownEvent evt)
@@ -570,10 +571,8 @@ namespace Twinny.Mobile.Samples
             if (_cutoffSlider == null)
                 return;
 
-            float maxHeight = Mathf.Max(_cutoffSlider.lowValue, height);
-            _cutoffSlider.highValue = maxHeight;
-            _cutoffSlider.SetValueWithoutNotify(maxHeight);
-            Shader.SetGlobalFloat("_CutoffHeight", maxHeight);
+            ApplyCutoffSliderRange();
+            SyncCutoffSliderAndShader(height);
         }
 
         public void OnImmersiveRequested(string sceneName)
@@ -593,9 +592,8 @@ namespace Twinny.Mobile.Samples
             if (_cutoffSlider == null)
                 return;
 
-            float maxHeight = _cutoffSlider.highValue;
-            _cutoffSlider.SetValueWithoutNotify(maxHeight);
-            Shader.SetGlobalFloat("_CutoffHeight", maxHeight);
+            ApplyCutoffSliderRange();
+            SyncCutoffSliderAndShader(_cutoffSlider.highValue);
         }
         public void OnExitImmersiveMode(){ }
 
@@ -603,7 +601,10 @@ namespace Twinny.Mobile.Samples
         {
             SetModeButtons(isMockup: true);
             if (_cutoffSlider != null)
-                _cutoffSlider.SetValueWithoutNotify(Shader.GetGlobalFloat("_CutoffHeight"));
+            {
+                ApplyCutoffSliderRange();
+                SyncCutoffSliderAndShader(Shader.GetGlobalFloat("_CutoffHeight"));
+            }
         }
         public void OnExitMockupMode()
         {
@@ -819,7 +820,7 @@ namespace Twinny.Mobile.Samples
         private void ApplyModeButtons()
         {
             bool canShowMockupControls = HasActiveOrbitalHandlerInstance() && MobileFpsNavigation.HasActiveInstance;
-            bool canShowAlphaSlider = _isMockupMode && AlphaClipper.HasActiveInstance;
+            bool canShowAlphaSlider = _isMockupMode && AlphaClipper.Instance;
             bool canShowGyroToggle = !_isMockupMode && IsMobileWebGlRuntime();
 
             if (_gyroToggleButton != null)
@@ -922,6 +923,37 @@ namespace Twinny.Mobile.Samples
                 return;
 
             _document.panelSettings.sortingOrder = _defaultPanelSortingOrder;
+        }
+
+        private void ApplyCutoffSliderRange()
+        {
+            if (_cutoffSlider == null)
+                return;
+
+            Vector2 minMaxWallHeight = AlphaClipper.MinMaxWallHeight;
+            float minHeight = Mathf.Min(minMaxWallHeight.x, minMaxWallHeight.y);
+            float maxHeight = Mathf.Max(minMaxWallHeight.x, minMaxWallHeight.y);
+
+            _cutoffSlider.lowValue = minHeight;
+            _cutoffSlider.highValue = maxHeight;
+        }
+
+        private float ClampCutoffHeight(float height)
+        {
+            Vector2 minMaxWallHeight = AlphaClipper.MinMaxWallHeight;
+            float minHeight = Mathf.Min(minMaxWallHeight.x, minMaxWallHeight.y);
+            float maxHeight = Mathf.Max(minMaxWallHeight.x, minMaxWallHeight.y);
+            return Mathf.Clamp(height, minHeight, maxHeight);
+        }
+
+        private void SyncCutoffSliderAndShader(float height)
+        {
+            float clampedHeight = ClampCutoffHeight(height);
+
+            if (_cutoffSlider != null)
+                _cutoffSlider.SetValueWithoutNotify(clampedHeight);
+
+            Shader.SetGlobalFloat("_CutoffHeight", clampedHeight);
         }
     }
 }

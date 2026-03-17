@@ -3,7 +3,7 @@
     <ui:VisualElement name="MockupInterfaceRoot" picking-mode="Ignore" class="mockup-interface-root">
         <ui:VisualElement name="SidebarRoot" picking-mode="Ignore" class="mockup-sidebar">
             <ui:ScrollView mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto" name="FloorCardList" picking-mode="Ignore" class="mockup-card-list">
-                <ui:VisualElement name="MockupCardTemplate" class="mockup-card mockup-card--enabled" style="display: flex;">
+                <ui:VisualElement name="MockupCardTemplate" class="mockup-card mockup-card--enabled">
                     <ui:VisualElement class="mockup-card__content">
                         <ui:Label text="Piscina" class="mockup-card__title"/>
                         <ui:Label text="Area de lazer" class="mockup-card__subtitle"/>

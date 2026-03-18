@@ -390,122 +390,155 @@ namespace Twinny.Mobile.Editor.Cameras
 
                 trackerContainer.style.display = DisplayStyle.Flex;
                 trackerContainer.Add(new Label("Tracker Point Settings"));
-                trackerContainer.Add(new HelpBox(
-                    "Only non-zero override values are considered at runtime. Zero-valued fields are treated as unset and will fall back to the handler defaults.",
-                    HelpBoxMessageType.Warning
-                ));
-
                 SerializedObject poiObject = new SerializedObject(poi);
-                AddSlider(trackerContainer, poiObject.FindProperty("_targetRadius"), 0f, 200f, "Target Radius", poiObject);
-                AddProperty(trackerContainer, poiObject.FindProperty("_radiusLimits"), poiObject);
+                VisualElement orbitalSection = CreateSection(trackerContainer, "Orbital Overrides");
+                AddTrackerZeroValueWarning(orbitalSection);
+                AddTrackerOrbitalFields(orbitalSection, poiObject);
+                AddTrackerPanConstraintFields(CreateSection(trackerContainer, "Pan Constraint"), poiObject);
+                AddTrackerDemoFields(CreateSection(trackerContainer, "Demo Mode"), poiObject);
+            }
 
-                SerializedProperty overrideRotationProp = poiObject.FindProperty("_overrideRotation");
-                AddProperty(trackerContainer, overrideRotationProp, poiObject);
+            RebuildTrackerProperties();
+            container.TrackPropertyValue(trackerPointProp, _ => RebuildTrackerProperties());
+        }
 
-                var rotationContainer = new VisualElement();
-                trackerContainer.Add(rotationContainer);
-                AddRadiansAsDegreesSlider(rotationContainer, poiObject, "_targetPan", "Target Pan");
-                AddRadiansAsDegreesSlider(rotationContainer, poiObject, "_targetTilt", "Target Tilt");
-                AddProperty(trackerContainer, poiObject.FindProperty("_verticalAxisLimits"), poiObject);
-                AddProperty(trackerContainer, poiObject.FindProperty("_maxPanDistance"), poiObject);
-                AddProperty(trackerContainer, poiObject.FindProperty("_enablePanLimit"), poiObject);
+        private void AddTrackerZeroValueWarning(VisualElement container)
+        {
+            if (container == null) return;
 
+            container.Add(new HelpBox(
+                "Only non-zero override values are considered at runtime. Zero-valued fields are treated as unset and will fall back to the handler defaults.",
+                HelpBoxMessageType.Warning
+            ));
+        }
+
+        private void AddTrackerOrbitalFields(VisualElement container, SerializedObject owner)
+        {
+            if (container == null || owner == null) return;
+
+            AddSlider(container, owner.FindProperty("_targetRadius"), 0f, 200f, "Target Radius", owner);
+            AddProperty(container, owner.FindProperty("_radiusLimits"), owner);
+
+            SerializedProperty overrideRotationProp = owner.FindProperty("_overrideRotation");
+            AddProperty(container, overrideRotationProp, owner);
+
+            var rotationContainer = new VisualElement();
+            container.Add(rotationContainer);
+            AddRadiansAsDegreesSlider(rotationContainer, owner, "_targetPan", "Target Pan");
+            AddRadiansAsDegreesSlider(rotationContainer, owner, "_targetTilt", "Target Tilt");
+            AddProperty(container, owner.FindProperty("_verticalAxisLimits"), owner);
+            AddSlider(container, owner.FindProperty("_maxPanDistance"), 0f, 100f, "Max Pan Distance", owner);
+            AddProperty(container, owner.FindProperty("_enablePanLimit"), owner);
+
+            if (overrideRotationProp != null)
+            {
                 void RefreshRotationVisibility()
                 {
-                    poiObject.Update();
-                    rotationContainer.style.display = overrideRotationProp != null && overrideRotationProp.boolValue
+                    owner.Update();
+                    rotationContainer.style.display = overrideRotationProp.boolValue
                         ? DisplayStyle.Flex
                         : DisplayStyle.None;
                 }
 
                 RefreshRotationVisibility();
-                if (overrideRotationProp != null)
-                    trackerContainer.TrackPropertyValue(overrideRotationProp, _ => RefreshRotationVisibility());
+                container.TrackPropertyValue(overrideRotationProp, _ => RefreshRotationVisibility());
+            }
 
-                SerializedProperty overridePanConstraintProp = poiObject.FindProperty("_overridePanConstraint");
-                AddProperty(trackerContainer, overridePanConstraintProp, poiObject);
+            SerializedProperty overrideDeoccluderProp = owner.FindProperty("_overrideDeoccluder");
+            AddProperty(container, overrideDeoccluderProp, owner);
 
-                var panConstraintContainer = new VisualElement();
-                trackerContainer.Add(panConstraintContainer);
+            var deoccluderContainer = new VisualElement();
+            container.Add(deoccluderContainer);
+            AddSlider(deoccluderContainer, owner.FindProperty("_overrideDeoccluderRadius"), 0f, 500f, "Deoccluder Radius", owner);
 
-                SerializedProperty lockX = poiObject.FindProperty("_lockPanX");
-                SerializedProperty lockY = poiObject.FindProperty("_lockPanY");
-                SerializedProperty lockZ = poiObject.FindProperty("_lockPanZ");
-
-                if (lockX != null && lockY != null && lockZ != null)
-                {
-                    var row = new VisualElement();
-                    row.AddToClassList("row");
-
-                    var label = new Label("Pan Constraint");
-                    label.AddToClassList("row-label");
-
-                    var values = new VisualElement();
-                    values.AddToClassList("inline-values");
-                    values.AddToClassList("axis-toggle-group");
-
-                    values.Add(CreateAxisToggle("X", lockX));
-                    values.Add(CreateAxisToggle("Y", lockY));
-                    values.Add(CreateAxisToggle("Z", lockZ));
-
-                    row.Add(label);
-                    row.Add(values);
-                    panConstraintContainer.Add(row);
-                }
-
-                void RefreshPanConstraintVisibility()
-                {
-                    poiObject.Update();
-                    panConstraintContainer.style.display = overridePanConstraintProp != null && overridePanConstraintProp.boolValue
-                        ? DisplayStyle.Flex
-                        : DisplayStyle.None;
-                }
-
-                RefreshPanConstraintVisibility();
-                if (overridePanConstraintProp != null)
-                    trackerContainer.TrackPropertyValue(overridePanConstraintProp, _ => RefreshPanConstraintVisibility());
-
-                SerializedProperty overrideDeoccluderProp = poiObject.FindProperty("_overrideDeoccluder");
-                AddProperty(trackerContainer, overrideDeoccluderProp, poiObject);
-
-                var deoccluderContainer = new VisualElement();
-                trackerContainer.Add(deoccluderContainer);
-                AddSlider(deoccluderContainer, poiObject.FindProperty("_overrideDeoccluderRadius"), 0f, 500f, "Deoccluder Radius", poiObject);
-
+            if (overrideDeoccluderProp != null)
+            {
                 void RefreshDeoccluderVisibility()
                 {
-                    poiObject.Update();
-                    deoccluderContainer.style.display = overrideDeoccluderProp != null && overrideDeoccluderProp.boolValue
+                    owner.Update();
+                    deoccluderContainer.style.display = overrideDeoccluderProp.boolValue
                         ? DisplayStyle.Flex
                         : DisplayStyle.None;
                 }
 
                 RefreshDeoccluderVisibility();
-                if (overrideDeoccluderProp != null)
-                    trackerContainer.TrackPropertyValue(overrideDeoccluderProp, _ => RefreshDeoccluderVisibility());
+                container.TrackPropertyValue(overrideDeoccluderProp, _ => RefreshDeoccluderVisibility());
+            }
+        }
 
-                SerializedProperty avoidDemoModeProp = poiObject.FindProperty("_avoidDemoMode");
-                AddProperty(trackerContainer, avoidDemoModeProp, poiObject);
+        private void AddTrackerPanConstraintFields(VisualElement container, SerializedObject owner)
+        {
+            if (container == null || owner == null) return;
 
-                var demoContainer = new VisualElement();
-                trackerContainer.Add(demoContainer);
-                AddSlider(demoContainer, poiObject.FindProperty("_demoIdleSecondsOverride"), 0f, 120f, "Demo Idle Seconds", poiObject);
+            SerializedProperty overrideProp = owner.FindProperty("_overridePanConstraint");
+            SerializedProperty lockX = owner.FindProperty("_lockPanX");
+            SerializedProperty lockY = owner.FindProperty("_lockPanY");
+            SerializedProperty lockZ = owner.FindProperty("_lockPanZ");
+            AddProperty(container, overrideProp, owner);
 
-                void RefreshDemoVisibility()
+            var locksContainer = new VisualElement();
+            container.Add(locksContainer);
+
+            if (lockX != null && lockY != null && lockZ != null)
+            {
+                var row = new VisualElement();
+                row.AddToClassList("row");
+
+                var label = new Label("Pan Constraint");
+                label.AddToClassList("row-label");
+
+                var values = new VisualElement();
+                values.AddToClassList("inline-values");
+                values.AddToClassList("axis-toggle-group");
+
+                values.Add(CreateAxisToggle("X", lockX));
+                values.Add(CreateAxisToggle("Y", lockY));
+                values.Add(CreateAxisToggle("Z", lockZ));
+
+                row.Add(label);
+                row.Add(values);
+                locksContainer.Add(row);
+            }
+
+            if (overrideProp != null)
+            {
+                void RefreshVisibility()
                 {
-                    poiObject.Update();
-                    demoContainer.style.display = avoidDemoModeProp != null && avoidDemoModeProp.boolValue
+                    owner.Update();
+                    locksContainer.style.display = overrideProp.boolValue
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                }
+
+                RefreshVisibility();
+                container.TrackPropertyValue(overrideProp, _ => RefreshVisibility());
+            }
+        }
+
+        private void AddTrackerDemoFields(VisualElement container, SerializedObject owner)
+        {
+            if (container == null || owner == null) return;
+
+            SerializedProperty avoidProp = owner.FindProperty("_avoidDemoMode");
+            AddProperty(container, avoidProp, owner);
+
+            var idleContainer = new VisualElement();
+            container.Add(idleContainer);
+            AddSlider(idleContainer, owner.FindProperty("_demoIdleSecondsOverride"), 0f, 120f, "Demo Idle Seconds", owner);
+
+            if (avoidProp != null)
+            {
+                void RefreshVisibility()
+                {
+                    owner.Update();
+                    idleContainer.style.display = avoidProp.boolValue
                         ? DisplayStyle.None
                         : DisplayStyle.Flex;
                 }
 
-                RefreshDemoVisibility();
-                if (avoidDemoModeProp != null)
-                    trackerContainer.TrackPropertyValue(avoidDemoModeProp, _ => RefreshDemoVisibility());
+                RefreshVisibility();
+                container.TrackPropertyValue(avoidProp, _ => RefreshVisibility());
             }
-
-            RebuildTrackerProperties();
-            container.TrackPropertyValue(trackerPointProp, _ => RebuildTrackerProperties());
         }
 
 

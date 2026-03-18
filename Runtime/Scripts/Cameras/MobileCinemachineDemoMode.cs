@@ -276,5 +276,17 @@ namespace Twinny.Mobile.Cameras
         public void OnAccessibilityAction(string actionName) { }
         public void OnScreenReaderGesture(string gestureType) { }
         public void OnNotificationAction(bool isQuickAction) { }
+
+        public void ResetDemoMode()
+        {
+            NotifyInteraction();
+        }
+
+        public void ResetDemoModeSilently()
+        {
+            _lastInteractionTime = Time.unscaledTime;
+            if (_isDemoActive)
+                StopDemo(resetIdleTimer: false);
+        }
     }
 }

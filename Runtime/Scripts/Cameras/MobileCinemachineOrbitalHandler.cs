@@ -119,6 +119,7 @@ namespace Twinny.Mobile.Cameras
         private Transform _activeTrackingTarget;
         private CinemachineTracker _trackingTargetPoi;
         private bool _notifyPoiFocusedOnTransitionComplete;
+        private MobileCinemachineDemoMode _demoMode;
 
         private struct SuspendedHardLookState
         {
@@ -592,6 +593,9 @@ namespace Twinny.Mobile.Cameras
 
             if (_orbitalFollow == null)
                 _orbitalFollow = GetComponent<CinemachineOrbitalFollow>();
+
+            if (_demoMode == null)
+                _demoMode = GetComponent<MobileCinemachineDemoMode>();
         }
 
         private void ApplyMode(bool isActive)
@@ -847,6 +851,9 @@ namespace Twinny.Mobile.Cameras
             CinemachineTracker targetPoi = floor.TrackerPoint;
             CinemachineFloor previousFloor = _selectedFloor;
 
+            ResetDemoModeForFloorTransition();
+            CancelActiveFloorSelectionTransition();
+
             _selectedFloor = floor;
             _pointOfInterest = floor.UseFocusPoint ? targetPoi : null;
             _deferRadiusClampUntilFloorRadiusSettles = true;
@@ -911,6 +918,36 @@ namespace Twinny.Mobile.Cameras
             );
 
             TryNotifyFloorFocused();
+        }
+
+        private void CancelActiveFloorSelectionTransition()
+        {
+            _notifyPoiFocusedOnTransitionComplete = false;
+            _hasPendingRotationTransition = false;
+
+            _isFloorTargetTransitioning = false;
+            _floorTargetTransitionVelocity = Vector3.zero;
+
+            _isRadiusTransitioning = false;
+            _radiusTransitionVelocity = 0f;
+            _deferRadiusClampUntilFloorRadiusSettles = false;
+
+            _isRotationTransitioning = false;
+            _rotationHorizontalVelocity = 0f;
+            _rotationVerticalVelocity = 0f;
+
+            _isReturningPan = false;
+            _panReturnVelocity = Vector3.zero;
+            _hasPanLockAxes = false;
+            EndPan(skipReturnToOrigin: true);
+
+            if (_hardLookRestoreRoutine != null)
+            {
+                StopCoroutine(_hardLookRestoreRoutine);
+                _hardLookRestoreRoutine = null;
+            }
+
+            RestoreHardLookAfterPan();
         }
 
         private void ApplyDeoccluderRadiusOverride(CinemachineFloor floor)
@@ -1032,6 +1069,7 @@ namespace Twinny.Mobile.Cameras
                 _isFloorTargetTransitioning = false;
                 _floorTargetTransitionVelocity = Vector3.zero;
                 SetDeoccluderEnabledForFloorTransition(true);
+                ResetDemoModeForFloorTransition();
             }
         }
 
@@ -1138,6 +1176,14 @@ namespace Twinny.Mobile.Cameras
 
             _selectedFloor?.Focus();
             _notifyPoiFocusedOnTransitionComplete = false;
+        }
+
+        private void ResetDemoModeForFloorTransition()
+        {
+            EnsureReferences();
+            if (_demoMode == null) return;
+
+            _demoMode.ResetDemoModeSilently();
         }
 
 

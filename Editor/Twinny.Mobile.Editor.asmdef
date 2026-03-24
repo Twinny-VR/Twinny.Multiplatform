@@ -2,6 +2,7 @@
     "name": "Twinny.Mobile.Editor",
     "rootNamespace": "Twinny.Editor",
     "references": [
+        "GUID:15a8c6634ed994d41bf088e7aa8948ca",
         "GUID:9c2b2406ba3ac0e4a8518664b4f03e72",
         "GUID:75469ad4d38634e559750d17036d5f7c",
         "GUID:2bafac87e7f4b9b418d9448d219b01ab",

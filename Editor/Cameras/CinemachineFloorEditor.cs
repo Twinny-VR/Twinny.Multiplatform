@@ -1,3 +1,4 @@
+using Twinny.Editor.Navigation;
 using Twinny.Mobile.Cameras;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -90,6 +91,8 @@ namespace Twinny.Mobile.Editor.Cameras
             SerializedProperty subtitleProp = dataProp.FindPropertyRelative("<Subtitle>k__BackingField");
             SerializedProperty immersionSceneProp = dataProp.FindPropertyRelative("<ImmersionSceneName>k__BackingField");
             SerializedProperty sceneOpenModeProp = dataProp.FindPropertyRelative("<SceneOpenMode>k__BackingField");
+            SerializedProperty useLandMarkProp = dataProp.FindPropertyRelative("<UseLandMark>k__BackingField");
+            SerializedProperty landmarkGuidProp = dataProp.FindPropertyRelative("<LandmarkGuid>k__BackingField");
             SerializedProperty requestOnSelectProp = serializedObject.FindProperty("_requestOnSelect");
             SerializedProperty showHintProp = serializedObject.FindProperty("_showHint");
 
@@ -112,17 +115,40 @@ namespace Twinny.Mobile.Editor.Cameras
                 sceneOpenModeField.Bind(serializedObject);
                 container.Add(sceneOpenModeField);
 
+                PropertyField useLandMarkField = null;
+                if (useLandMarkProp != null)
+                {
+                    useLandMarkField = new PropertyField(useLandMarkProp);
+                    useLandMarkField.Bind(serializedObject);
+                    container.Add(useLandMarkField);
+                }
+
+                VisualElement landmarkGuidField = null;
+
+                if (landmarkGuidProp != null)
+                {
+                    landmarkGuidField = CreateLandmarkGuidPicker(landmarkGuidProp);
+                    container.Add(landmarkGuidField);
+                }
+
                 void RefreshSceneOpenModeVisibility()
                 {
                     serializedObject.Update();
                     bool hasSceneName = !string.IsNullOrWhiteSpace(immersionSceneProp?.stringValue);
+                    bool showLandmarkPicker = hasSceneName && useLandMarkProp != null && useLandMarkProp.boolValue;
                     sceneOpenModeField.style.display = hasSceneName ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (useLandMarkField != null)
+                        useLandMarkField.style.display = hasSceneName ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (landmarkGuidField != null)
+                        landmarkGuidField.style.display = showLandmarkPicker ? DisplayStyle.Flex : DisplayStyle.None;
                     if (requestOnSelectField != null)
                         requestOnSelectField.style.display = hasSceneName ? DisplayStyle.Flex : DisplayStyle.None;
                 }
 
                 RefreshSceneOpenModeVisibility();
                 sceneOpenModeField.TrackPropertyValue(immersionSceneProp, _ => RefreshSceneOpenModeVisibility());
+                if (useLandMarkProp != null)
+                    container.TrackPropertyValue(useLandMarkProp, _ => RefreshSceneOpenModeVisibility());
             }
             else if (requestOnSelectField != null)
             {
@@ -329,6 +355,142 @@ namespace Twinny.Mobile.Editor.Cameras
             var label = new Label(text);
             label.AddToClassList("inline-note");
             container.Add(label);
+        }
+
+        private VisualElement CreateLandmarkGuidPicker(SerializedProperty landmarkGuidProp)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("row");
+
+            var label = new Label("Landmark Guid");
+            label.AddToClassList("row-label");
+            row.Add(label);
+
+            var values = new VisualElement();
+            values.AddToClassList("inline-values");
+
+            var guidField = new TextField
+            {
+                value = string.IsNullOrWhiteSpace(landmarkGuidProp.stringValue) ? "[default]" : landmarkGuidProp.stringValue,
+                isReadOnly = true
+            };
+            guidField.AddToClassList("row-field");
+            guidField.tooltip = "Select a Landmark from the project database.";
+            values.Add(guidField);
+
+            Button clearButton = null;
+            clearButton = new Button(() => ClearLandmarkGuid(landmarkGuidProp, guidField, clearButton))
+            {
+                text = "X"
+            };
+            clearButton.tooltip = "Clear Landmark Guid";
+            clearButton.style.width = 22f;
+            clearButton.style.minWidth = 22f;
+            clearButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+            clearButton.SetEnabled(!string.IsNullOrWhiteSpace(landmarkGuidProp.stringValue));
+            values.Add(clearButton);
+
+            var searchButton = new Button
+            {
+                text = string.Empty
+            };
+            searchButton.clicked += () => ShowLandmarkPicker(searchButton, landmarkGuidProp, guidField);
+            searchButton.tooltip = "Search Landmark";
+            searchButton.style.width = 28f;
+            searchButton.style.minWidth = 28f;
+            searchButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+            Texture searchIcon = EditorGUIUtility.IconContent("Search Icon").image;
+            if (searchIcon != null)
+            {
+                searchButton.style.backgroundImage = new StyleBackground((Texture2D)searchIcon);
+                searchButton.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
+                searchButton.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+            }
+            else
+            {
+                searchButton.text = "Q";
+            }
+
+            values.Add(searchButton);
+
+            void RefreshButtons()
+            {
+                bool hasGuid = !string.IsNullOrWhiteSpace(landmarkGuidProp.stringValue);
+                clearButton.SetEnabled(hasGuid);
+            }
+
+            RefreshButtons();
+            row.Add(values);
+            return row;
+        }
+
+        private void ShowLandmarkPicker(Button anchor, SerializedProperty landmarkGuidProp, TextField guidField)
+        {
+            Button clearButton = null;
+            if (anchor?.parent != null)
+            {
+                for (int i = 0; i < anchor.parent.childCount; i++)
+                {
+                    if (anchor.parent[i] is Button button && button != anchor)
+                    {
+                        clearButton = button;
+                        break;
+                    }
+                }
+            }
+
+            LandmarkPickerWindow.ShowModal(entry =>
+            {
+                serializedObject.Update();
+                landmarkGuidProp.stringValue = entry?.LandmarkGuid ?? string.Empty;
+                serializedObject.ApplyModifiedProperties();
+                string displayValue = string.IsNullOrWhiteSpace(landmarkGuidProp.stringValue)
+                    ? "[default]"
+                    : landmarkGuidProp.stringValue;
+                guidField.SetValueWithoutNotify(displayValue);
+                if (clearButton != null)
+                {
+                    clearButton.SetEnabled(!string.IsNullOrWhiteSpace(landmarkGuidProp.stringValue));
+                }
+            }, GetHostWindowRect(anchor), nameof(CinemachineLandmark));
+        }
+
+        private void ClearLandmarkGuid(SerializedProperty landmarkGuidProp, TextField guidField, Button clearButton)
+        {
+            serializedObject.Update();
+            landmarkGuidProp.stringValue = string.Empty;
+            serializedObject.ApplyModifiedProperties();
+            guidField.SetValueWithoutNotify("[default]");
+            if (clearButton != null)
+            {
+                clearButton.SetEnabled(false);
+            }
+        }
+
+        private static Rect GetHostWindowRect(VisualElement anchor)
+        {
+            EditorWindow focusedWindow = EditorWindow.focusedWindow;
+            if (focusedWindow != null)
+            {
+                return focusedWindow.position;
+            }
+
+            EditorWindow mouseOverWindow = EditorWindow.mouseOverWindow;
+            if (mouseOverWindow != null)
+            {
+                return mouseOverWindow.position;
+            }
+
+            if (anchor != null)
+            {
+                Rect bounds = anchor.worldBound;
+                return new Rect(bounds.xMin, bounds.yMin, 900f, 700f);
+            }
+
+            return new Rect(120f, 120f, 1200f, 800f);
         }
 
         private static VisualElement CreateAxisToggle(string axis, SerializedProperty property)

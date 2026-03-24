@@ -10,6 +10,10 @@ namespace Twinny.Mobile
 {
     public class TwinnyMobileManager : MonoBehaviour, IMobileUICallbacks
     {
+        private static string s_pendingLandmarkGuid;
+
+        public static string PendingLandmarkGuid => s_pendingLandmarkGuid;
+
         private void OnEnable()
         {
             CallbackHub.RegisterCallback<IMobileUICallbacks>(this);
@@ -43,12 +47,22 @@ namespace Twinny.Mobile
             if (data == null || string.IsNullOrWhiteSpace(data.ImmersionSceneName))
                 return;
 
+            SyncPendingLandmarkGuid(data);
+
             CallbackHub.CallAction<IMobileUICallbacks>(callback =>
             {
-                if (data.SceneOpenMode == FloorData.FloorSceneOpenMode.Mockup)
-                    callback.OnMockupRequested(data.ImmersionSceneName);
-                else
-                    callback.OnImmersiveRequested(data.ImmersionSceneName);
+                switch (data.SceneOpenMode)
+                {
+                    case FloorData.FloorSceneOpenMode.Immersive:
+                    callback.OnImmersiveRequested(data);
+                        break;
+                    case FloorData.FloorSceneOpenMode.Mockup:
+                    callback.OnMockupRequested(data);
+                        break;
+                    default:
+                        Debug.LogError($"[TwinnyMobileManager] Scene open mode '{data.SceneOpenMode.ToString()}' not implemented!");
+                        break;
+                }
             });
 
         }
@@ -58,12 +72,14 @@ namespace Twinny.Mobile
 
 
 
-        public async void OnImmersiveRequested(string sceneName = "")
+        public async void OnImmersiveRequested(FloorData data = null)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             if (!WebGLGyroAPI.IsInitialized)
                 WebGLGyroAPI.RequestGyroPermission();
 #endif
+            SyncPendingLandmarkGuid(data);
+            string sceneName = data?.ImmersionSceneName ?? string.Empty;
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
             StateMachine.ChangeState(new MobileImmersiveState(this));
@@ -73,8 +89,10 @@ namespace Twinny.Mobile
 
         public void OnMaxWallHeightRequested(float height) { }
 
-        public async void OnMockupRequested(string sceneName = "")
+        public async void OnMockupRequested(FloorData data = null)
         {
+            SyncPendingLandmarkGuid(data);
+            string sceneName = data?.ImmersionSceneName ?? string.Empty;
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
             StateMachine.ChangeState(new MobileMockupState(this));
@@ -91,6 +109,37 @@ namespace Twinny.Mobile
         public void OnLoadingProgressChanged(float progress) { }
         public void OnExperienceLoaded() { }
         public void OnGyroscopeToggled(bool enabled) { }
+
+        public static void SetPendingLandmarkGuid(string landmarkGuid)
+        {
+            s_pendingLandmarkGuid = string.IsNullOrWhiteSpace(landmarkGuid) ? string.Empty : landmarkGuid;
+        }
+
+        public static void ClearPendingLandmarkGuid()
+        {
+            s_pendingLandmarkGuid = string.Empty;
+        }
+
+        public static bool TryGetPendingLandmarkGuid(out string landmarkGuid)
+        {
+            landmarkGuid = s_pendingLandmarkGuid;
+            return !string.IsNullOrWhiteSpace(landmarkGuid);
+        }
+
+        public static bool TryConsumePendingLandmarkGuid(out string landmarkGuid)
+        {
+            landmarkGuid = s_pendingLandmarkGuid;
+            s_pendingLandmarkGuid = string.Empty;
+            return !string.IsNullOrWhiteSpace(landmarkGuid);
+        }
+
+        private static void SyncPendingLandmarkGuid(FloorData data)
+        {
+            if (data == null)
+                return;
+
+            SetPendingLandmarkGuid(data.UseLandMark ? data.LandmarkGuid : string.Empty);
+        }
 
         private static async Task LoadSceneWithProgressAsync(string sceneName, LoadSceneMode mode)
         {

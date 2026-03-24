@@ -7,6 +7,7 @@ using UnityEngine;
 using Unity.Cinemachine;
 using UnityEngine.SceneManagement;
 using Twinny.Shaders;
+using Twinny.Navigation;
 
 namespace Twinny.Mobile.Cameras
 {
@@ -54,7 +55,6 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private bool _applyFloorRotationOnSelect = false;
         [SerializeField] private float _rotationTransitionSpeed = 270f;
         [SerializeField] private float _rotationTransitionEpsilon = 0.2f;
-        [SerializeField] private bool _moveLookAtWithFloorTarget = true;
         [SerializeField] private float _floorTargetTransitionSpeed = 14.4f;
         [SerializeField] private float _floorTargetTransitionEpsilon = 0.01f;
         [SerializeField] private float _floorTargetLongDistance = 10f;
@@ -149,7 +149,7 @@ namespace Twinny.Mobile.Cameras
             CacheOrbitalMembers();
             InitializePanLimit();
             RefreshTargetOverrides(forceRefresh: true);
-            ApplyMode(_isModeActive);
+            ApplyMode(_isModeActive, applyPendingLandmark: false);
             CallbackHub.RegisterCallback<IMobileInputCallbacks>(this);
             CallbackHub.RegisterCallback<ITwinnyMobileCallbacks>(this);
         }
@@ -603,12 +603,15 @@ namespace Twinny.Mobile.Cameras
                 _demoMode = GetComponent<MobileCinemachineDemoMode>();
         }
 
-        private void ApplyMode(bool isActive)
+        private void ApplyMode(bool isActive, bool applyPendingLandmark = true)
         {
             if(isActive) CallbackHub.CallAction<IMobileUICallbacks>(callback => callback.OnMaxWallHeightRequested(AlphaClipper.MinMaxWallHeight.y));
             _isModeActive = isActive;
             if (_cinemachineCamera != null)
                 _cinemachineCamera.Priority = isActive ? _activePriority : _inactivePriority;
+
+            if (isActive && applyPendingLandmark)
+                TryMoveTrackingTargetToPendingLandmark();
         }
 
         private void ClampLimits()
@@ -1270,11 +1273,31 @@ namespace Twinny.Mobile.Cameras
             for (int i = 0; i < count; i++)
             {
                 var brain = CinemachineBrain.GetActiveBrain(i);
-                if (brain != null && brain.ActiveVirtualCamera == _cinemachineCamera)
+                if (brain != null && brain.ActiveVirtualCamera == (ICinemachineCamera)_cinemachineCamera)
                     return true;
             }
 
             return false;
+        }
+
+        private void TryMoveTrackingTargetToPendingLandmark()
+        {
+            if (!TwinnyMobileManager.TryGetPendingLandmarkGuid(out string landmarkGuid))
+                return;
+
+            if (!LandmarkHub.TryGetByLandmarkGuid(landmarkGuid, out Landmark landmark) || landmark == null)
+            {
+                Debug.LogWarning($"[MobileCinemachineOrbitalHandler] Pending landmark '{landmarkGuid}' was not found in LandmarkHub.");
+                return;
+            }
+
+            Transform trackingTarget = GetTrackingTarget();
+            if (trackingTarget == null)
+                return;
+
+            trackingTarget.position = landmark.position;
+            InitializePanLimitForTarget(trackingTarget, true);
+            TwinnyMobileManager.ClearPendingLandmarkGuid();
         }
     }
 }

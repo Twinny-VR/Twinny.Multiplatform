@@ -1,3 +1,5 @@
+using Twinny.Mobile.Interactables;
+
 namespace Twinny.Mobile
 {
     /// <summary>
@@ -8,12 +10,12 @@ namespace Twinny.Mobile
         /// <summary>
         /// Called when the user requests immersive mode from the UI.
         /// </summary>
-        void OnImmersiveRequested(string sceneName = "");
+        void OnImmersiveRequested(FloorData data = null);
 
         /// <summary>
         /// Called when the user requests mockup mode from the UI.
         /// </summary>
-        void OnMockupRequested(string sceneName = "");
+        void OnMockupRequested(FloorData data = null);
 
         /// <summary>
         /// Called when the user requests to start an experience.

@@ -63,6 +63,8 @@ namespace Twinny.Mobile.Samples
         private Slider _cutoffSlider;
         private Floor _selectedFloor;
         private bool _isFloorHintReadyToShow;
+        private bool _hasFloorHintVisibilityState;
+        private bool _isFloorHintVisible;
         private bool _isCutoffPointerDragging;
         private int _cutoffPointerId = -1;
         private bool _warnedMissingRoot;
@@ -233,21 +235,28 @@ namespace Twinny.Mobile.Samples
             if (_document.rootVisualElement?.panel == null) return;
             if (!CanShowFloorHint(_selectedFloor))
             {
-                SetFloorHintVisibility(false);
+                if (_isFloorHintVisible)
+                    SetFloorHintVisibility(false);
                 return;
             }
 
             if (!_isFloorHintReadyToShow)
             {
-                SetFloorHintVisibility(false);
+                if (_isFloorHintVisible)
+                    SetFloorHintVisibility(false);
                 return;
             }
 
             if (_isDemoModeActive)
             {
-                SetFloorHintVisibility(false);
+                if (_isFloorHintVisible)
+                    SetFloorHintVisibility(false);
                 return;
             }
+
+            if (!_isFloorHintVisible)
+                return;
+
             Camera cam = Camera.main;
             if (cam == null) cam = FindAnyObjectByType<Camera>();
             if (cam == null) return;
@@ -261,7 +270,8 @@ namespace Twinny.Mobile.Samples
             Vector3 anchorScreen = cam.WorldToScreenPoint(tracker.position);
             if (anchorScreen.z <= 0f)
             {
-                SetFloorHintVisibility(false);
+                if (_isFloorHintVisible)
+                    SetFloorHintVisibility(false);
                 return;
             }
 
@@ -286,6 +296,10 @@ namespace Twinny.Mobile.Samples
         private void SetFloorHintVisibility(bool visible)
         {
             if (_floorHintWidget == null) return;
+            if (_hasFloorHintVisibilityState && _isFloorHintVisible == visible) return;
+
+            _hasFloorHintVisibilityState = true;
+            _isFloorHintVisible = visible;
             _floorHintWidget.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
@@ -579,13 +593,13 @@ namespace Twinny.Mobile.Samples
             SyncCutoffSliderAndShader(height);
         }
 
-        public void OnImmersiveRequested(string sceneName)
+        public void OnImmersiveRequested(FloorData data)
         {
             SetModeButtons(isMockup: false);
             SetFloorHintVisibility(false);
         }
 
-        public void OnMockupRequested(string sceneName)
+        public void OnMockupRequested(FloorData data)
         {
             SetModeButtons(isMockup: true);
             SetFloorHintVisibility(false);

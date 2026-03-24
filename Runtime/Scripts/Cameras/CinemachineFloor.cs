@@ -17,11 +17,9 @@ namespace Twinny.Mobile.Cameras
         [SerializeField] private bool _useFocusPoint = true;
         [FormerlySerializedAs("_focusPoint")]
         [SerializeField] private CinemachineTracker _trackerPoint;
-        [SerializeField] private bool _showHint = true;
 
         public bool UseFocusPoint => _useFocusPoint;
         public CinemachineTracker TrackerPoint => _trackerPoint;
-        public bool ShowHint => _showHint;
 
         public Transform TargetTransform => _useFocusPoint && _trackerPoint != null ? _trackerPoint.transform : transform;
         public Vector3 TargetPosition => TargetTransform.position;

@@ -23,6 +23,8 @@ namespace Twinny.Mobile.Interactables
         public bool HasImmersionScene => !string.IsNullOrWhiteSpace(ImmersionSceneName);
 
         [field: SerializeField] public FloorSceneOpenMode SceneOpenMode { get; set; } = FloorSceneOpenMode.Immersive;
+        [field: SerializeField] public bool UseLandMark { get; set; }
+        [field: SerializeField] public string LandmarkGuid { get; set; }
 
 
 
@@ -49,6 +51,10 @@ namespace Twinny.Mobile.Interactables
         public bool ApplyAlphaClip => _applyAlphaClip;
         public float AlphaClipHeight => _alphaClipHeight;
         public bool RequestOnSelect => _requestOnSelect;
+
+        [SerializeField] private bool _showHint = true;
+        public bool ShowHint => _showHint;
+
 
         [Header("Events")]
         [SerializeField] private UnityEvent _onSelect;

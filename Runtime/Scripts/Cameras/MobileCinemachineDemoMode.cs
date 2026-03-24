@@ -241,7 +241,7 @@ namespace Twinny.Mobile.Cameras
             for (int i = 0; i < count; i++)
             {
                 var brain = CinemachineBrain.GetActiveBrain(i);
-                if (brain != null && brain.ActiveVirtualCamera == _cinemachineCamera)
+                if (brain != null && brain.ActiveVirtualCamera == (ICinemachineCamera)_cinemachineCamera)
                     return true;
             }
 

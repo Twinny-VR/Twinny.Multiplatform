@@ -2,6 +2,7 @@ using System;
 using Concept.Core;
 using Twinny.Core.Input;
 using Twinny.Mobile.Interactables;
+using Twinny.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -146,7 +147,11 @@ namespace Twinny.Mobile.Navigation
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
 
-        public void OnEnterImmersiveMode() => _isModeActive = true;
+        public void OnEnterImmersiveMode()
+        {
+            _isModeActive = true;
+            TryTeleportToPendingLandmark();
+        }
         public void OnExitImmersiveMode() => _isModeActive = false;
         public void OnEnterMockupMode() { }
         public void OnExitMockupMode() { }
@@ -194,6 +199,58 @@ namespace Twinny.Mobile.Navigation
         {
             if (_agent == null)
                 _agent = GetComponent<NavMeshAgent>();
+        }
+
+        private void TryTeleportToPendingLandmark()
+        {
+            if (!TwinnyMobileManager.TryGetPendingLandmarkGuid(out string landmarkGuid))
+            {
+                return;
+            }
+
+            if (!LandmarkHub.TryGetByLandmarkGuid(landmarkGuid, out Landmark landmark) || landmark == null)
+            {
+                Debug.LogWarning($"[MobileFpsNavigation] Pending landmark '{landmarkGuid}' was not found in LandmarkHub.");
+                return;
+            }
+
+            TeleportToLandmark(landmark);
+            TwinnyMobileManager.ClearPendingLandmarkGuid();
+        }
+
+        private void TeleportToLandmark(Landmark landmark)
+        {
+            if (landmark == null)
+            {
+                return;
+            }
+
+            EnsureReferences();
+
+            Vector3 targetPosition = landmark.position;
+            if (NavMesh.SamplePosition(targetPosition, out NavMeshHit navHit, _maxSampleDistance, _navMeshAreaMask))
+            {
+                targetPosition = navHit.position;
+            }
+
+            if (_agent != null && _agent.enabled)
+            {
+                _agent.Warp(targetPosition);
+                _agent.ResetPath();
+                _agent.isStopped = true;
+            }
+            else
+            {
+                transform.position = targetPosition;
+            }
+
+            transform.rotation = landmark.rotation;
+
+            if (_currentDecal != null)
+            {
+                Destroy(_currentDecal);
+                _currentDecal = null;
+            }
         }
     }
 }

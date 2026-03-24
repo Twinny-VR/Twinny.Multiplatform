@@ -128,8 +128,8 @@ namespace Twinny.Mobile.Cameras
          public void OnFloorUnselected(Floor floor) { }
 
         public void OnMaxWallHeightRequested(float height) { }
-        public void OnImmersiveRequested(string sceneName) { }
-        public void OnMockupRequested(string sceneName) { }
+        public void OnImmersiveRequested(FloorData data) { }
+        public void OnMockupRequested(FloorData data) { }
         public void OnStartExperienceRequested(string sceneName) { }
         public void OnLoadingProgressChanged(float progress) { }
         public void OnGyroscopeToggled(bool enabled) => _useGyroscope = enabled;
@@ -290,7 +290,7 @@ namespace Twinny.Mobile.Cameras
             for (int i = 0; i < count; i++)
             {
                 var brain = CinemachineBrain.GetActiveBrain(i);
-                if (brain != null && brain.ActiveVirtualCamera == _cinemachineCamera)
+                if (brain != null && brain.ActiveVirtualCamera == (ICinemachineCamera)_cinemachineCamera)
                     return true;
             }
 

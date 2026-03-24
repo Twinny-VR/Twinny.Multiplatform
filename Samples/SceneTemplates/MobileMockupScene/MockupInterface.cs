@@ -160,9 +160,9 @@ namespace Twinny.Mobile.Samples
             CallbackHub.CallAction<IMobileUICallbacks>(callback =>
             {
                 if (data.SceneOpenMode == FloorData.FloorSceneOpenMode.Mockup)
-                    callback.OnMockupRequested(data.ImmersionSceneName);
+                    callback.OnMockupRequested(data);
                 else
-                    callback.OnImmersiveRequested(data.ImmersionSceneName);
+                    callback.OnImmersiveRequested(data);
             });
         }
 

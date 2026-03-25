@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using ConceptFactory.UIEssentials.Editor;
 using Twinny.Editor.Navigation;
 using Twinny.Multiplatform.Cameras;
 using UnityEditor;
@@ -98,7 +101,7 @@ namespace Twinny.Multiplatform.Editor.Cameras
 
             AddProperty(container, titleProp, serializedObject);
             AddProperty(container, subtitleProp, serializedObject);
-            AddProperty(container, immersionSceneProp, serializedObject);
+            AddScenePickerField(container, immersionSceneProp, "Immersion Scene Name");
             AddProperty(container, showHintProp, serializedObject);
 
             PropertyField requestOnSelectField = null;
@@ -355,6 +358,155 @@ namespace Twinny.Multiplatform.Editor.Cameras
             var label = new Label(text);
             label.AddToClassList("inline-note");
             container.Add(label);
+        }
+
+        private void AddScenePickerField(VisualElement container, SerializedProperty sceneProp, string labelText)
+        {
+            if (container == null || sceneProp == null) return;
+
+            var row = new VisualElement();
+            row.AddToClassList("row");
+
+            var label = new Label(labelText);
+            label.AddToClassList("row-label");
+            row.Add(label);
+
+            var field = new TextField
+            {
+                value = sceneProp.stringValue
+            };
+            field.AddToClassList("row-field");
+            field.BindProperty(sceneProp);
+
+            var values = new VisualElement();
+            values.AddToClassList("inline-values");
+            values.style.alignItems = Align.Center;
+            values.Add(field);
+
+            var searchButton = new Button
+            {
+                text = string.Empty
+            };
+            searchButton.tooltip = "Search Scene";
+            searchButton.clicked += () => ShowScenePicker(searchButton, sceneProp);
+            searchButton.style.width = 28f;
+            searchButton.style.minWidth = 28f;
+            searchButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+            Texture searchIcon = EditorGUIUtility.IconContent("Search Icon").image;
+            if (searchIcon is Texture2D searchTexture)
+            {
+                searchButton.style.backgroundImage = new StyleBackground(searchTexture);
+                searchButton.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
+                searchButton.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+            }
+            else
+            {
+                searchButton.text = "Q";
+            }
+
+            values.Add(searchButton);
+            row.Add(values);
+            container.Add(row);
+        }
+
+        private void ShowScenePicker(Button anchor, SerializedProperty sceneProp)
+        {
+            if (anchor == null || sceneProp == null) return;
+
+            UnityEditor.PopupWindow.Show(anchor.worldBound, new ScenePickerPopup(sceneProp.stringValue, entry => OnSceneSelected(sceneProp.propertyPath, entry)));
+        }
+
+        private void OnSceneSelected(string propertyPath, ScenePickerEntry scene)
+        {
+            if (string.IsNullOrWhiteSpace(propertyPath) || scene == null)
+            {
+                return;
+            }
+
+            if (scene.IsMissing)
+            {
+                bool removeScene = EditorUtility.DisplayDialog(
+                    "Scene Missing",
+                    $"The scene entry '{scene.Name}' no longer exists in the project.\n\nDo you want to remove it from Build Settings?",
+                    "Remove Scene",
+                    "Keep It");
+
+                if (removeScene)
+                {
+                    RemoveSceneFromBuildSettings(scene);
+                }
+
+                return;
+            }
+
+            if (!scene.InBuildSettings)
+            {
+                bool addToBuild = EditorUtility.DisplayDialog(
+                    "Scene Not In Build Settings",
+                    $"The scene '{scene.Name}' is not in Build Settings.\n\nDo you want to add it now?",
+                    "Add Scene",
+                    "Cancel");
+
+                if (!addToBuild)
+                {
+                    return;
+                }
+
+                AddSceneToBuildSettings(scene);
+            }
+
+            serializedObject.Update();
+            SerializedProperty property = serializedObject.FindProperty(propertyPath);
+            if (property == null)
+            {
+                return;
+            }
+
+            property.stringValue = scene.Name;
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private static void AddSceneToBuildSettings(ScenePickerEntry scene)
+        {
+            if (scene == null || string.IsNullOrWhiteSpace(scene.Path))
+            {
+                return;
+            }
+
+            EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes ?? Array.Empty<EditorBuildSettingsScene>();
+            var updatedScenes = new List<EditorBuildSettingsScene>(existingScenes)
+            {
+                new EditorBuildSettingsScene(scene.Path, true)
+            };
+
+            EditorBuildSettings.scenes = updatedScenes.ToArray();
+        }
+
+        private static void RemoveSceneFromBuildSettings(ScenePickerEntry scene)
+        {
+            if (scene == null || string.IsNullOrWhiteSpace(scene.Path))
+            {
+                return;
+            }
+
+            EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes ?? Array.Empty<EditorBuildSettingsScene>();
+            var updatedScenes = new List<EditorBuildSettingsScene>();
+
+            for (int i = 0; i < existingScenes.Length; i++)
+            {
+                EditorBuildSettingsScene buildScene = existingScenes[i];
+                if (buildScene == null || string.Equals(buildScene.path, scene.Path, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                updatedScenes.Add(buildScene);
+            }
+
+            EditorBuildSettings.scenes = updatedScenes.ToArray();
         }
 
         private VisualElement CreateLandmarkGuidPicker(SerializedProperty landmarkGuidProp)
@@ -759,7 +911,7 @@ namespace Twinny.Multiplatform.Editor.Cameras
 
         private Sprite LoadSprite(string path, string spriteName)
         {
-            Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
             if (assets == null || assets.Length == 0) return null;
 
             for (int i = 0; i < assets.Length; i++)

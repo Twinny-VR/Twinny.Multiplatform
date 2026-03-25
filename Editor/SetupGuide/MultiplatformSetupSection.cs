@@ -1,5 +1,9 @@
 #if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using ConceptFactory.UIEssentials.Editor;
 using System.Linq;
+using Twinny.Core.Editor;
 using Twinny.Multiplatform;
 using Twinny.Multiplatform.Input;
 using UnityEngine;
@@ -42,7 +46,10 @@ namespace Twinny.Editor
         private const string UxmlAssetPath = "Packages/com.twinny.multiplatform/Editor/SetupGuide/MultiplatformSetupSection.uxml";
         private const string UssAssetPath = "Packages/com.twinny.multiplatform/Editor/SetupGuide/MultiplatformSetupSection.uss";
         private const string InputSettingsAssetPath = "Assets/Resources/InputSettings.asset";
+        private const string PackageRootPath = "Packages/com.twinny.multiplatform";
         private readonly Label _title;
+        private readonly Label _versionLabel;
+        private readonly Button _updateButton;
         private readonly Label _description;
         private readonly Button _runtimeTabButton;
         private readonly Button _inputTabButton;
@@ -65,6 +72,8 @@ namespace Twinny.Editor
             {
                 visualTree.CloneTree(this);
                 _title = this.Q<Label>("MultiplatformTitle");
+                _versionLabel = this.Q<Label>("MultiplatformVersion");
+                _updateButton = this.Q<Button>("MultiplatformUpdateButton");
                 _description = this.Q<Label>("MultiplatformDescription");
                 _runtimeTabButton = this.Q<Button>("RuntimeTabButton");
                 _inputTabButton = this.Q<Button>("InputTabButton");
@@ -73,6 +82,9 @@ namespace Twinny.Editor
                 _runtimeInspectorRoot = this.Q<VisualElement>("RuntimeInspectorRoot");
                 _inputInspectorRoot = this.Q<VisualElement>("InputInspectorRoot");
                 RegisterTabCallbacks();
+
+                if (_updateButton != null)
+                    _updateButton.clicked += () => PackageUpdateUtility.RequestUpdate(PackageRootPath);
             }
             else
             {
@@ -82,6 +94,9 @@ namespace Twinny.Editor
 
             if (_title != null)
                 _title.text = "Twinny Multiplatform";
+
+            if (_versionLabel != null)
+                _versionLabel.text = PackageUpdateUtility.GetPackageVersionLabel(PackageRootPath);
 
             if (_description != null)
             {
@@ -93,6 +108,9 @@ namespace Twinny.Editor
 
         public void OnShowSection(SetupGuideWindow guideWindow, int tabIndex = 0)
         {
+            if (_updateButton != null)
+                _updateButton.style.display = PackageUpdateUtility.CanShowUpdateButton(PackageRootPath) ? DisplayStyle.Flex : DisplayStyle.None;
+
             RebuildRuntimeSection();
             RebuildInputSection();
             ShowTab(tabIndex == 1 ? "input" : "runtime");
@@ -125,6 +143,12 @@ namespace Twinny.Editor
                 enterChildren = false;
                 if (iterator.name == "m_Script")
                     continue;
+
+                if (iterator.name == "defaultSceneName")
+                {
+                    AddScenePickerField(_runtimeInspectorRoot, iterator.Copy(), _runtimeSerializedObject, "Default Scene Name");
+                    continue;
+                }
 
                 PropertyField field = new PropertyField(iterator.Copy());
                 field.Bind(_runtimeSerializedObject);
@@ -185,6 +209,165 @@ namespace Twinny.Editor
 
             _runtimeTabButton?.EnableInClassList("active", !showInput);
             _inputTabButton?.EnableInClassList("active", showInput);
+        }
+
+        private void AddScenePickerField(VisualElement container, SerializedProperty sceneProp, SerializedObject owner, string labelText)
+        {
+            if (container == null || sceneProp == null || owner == null)
+                return;
+
+            var row = new VisualElement();
+            row.AddToClassList("row");
+            row.AddToClassList("multiplatform-runtime-field");
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+            row.style.justifyContent = Justify.SpaceBetween;
+
+            var label = new Label(labelText);
+            label.AddToClassList("row-label");
+            label.style.minWidth = 140f;
+            label.style.marginRight = 8f;
+            label.style.flexShrink = 0f;
+            row.Add(label);
+
+            var field = new TextField
+            {
+                value = sceneProp.stringValue
+            };
+            field.AddToClassList("row-field");
+            field.style.flexGrow = 1f;
+            field.style.flexShrink = 1f;
+            field.style.minWidth = 0f;
+            field.BindProperty(sceneProp);
+
+            var values = new VisualElement();
+            values.AddToClassList("inline-values");
+            values.style.flexDirection = FlexDirection.Row;
+            values.style.alignItems = Align.Center;
+            values.style.flexGrow = 1f;
+            values.style.flexShrink = 1f;
+            values.style.minWidth = 0f;
+            values.Add(field);
+
+            var searchButton = new Button
+            {
+                text = string.Empty
+            };
+            searchButton.tooltip = "Search Scene";
+            searchButton.clicked += () => ShowScenePicker(searchButton, sceneProp.propertyPath, owner);
+            searchButton.style.width = 28f;
+            searchButton.style.minWidth = 28f;
+            searchButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+            Texture searchIcon = EditorGUIUtility.IconContent("Search Icon").image;
+            if (searchIcon is Texture2D searchTexture)
+            {
+                searchButton.style.backgroundImage = new StyleBackground(searchTexture);
+                searchButton.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
+                searchButton.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                searchButton.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+            }
+            else
+            {
+                searchButton.text = "Q";
+            }
+
+            values.Add(searchButton);
+            row.Add(values);
+            container.Add(row);
+        }
+
+        private void ShowScenePicker(Button anchor, string propertyPath, SerializedObject owner)
+        {
+            if (anchor == null || string.IsNullOrWhiteSpace(propertyPath) || owner == null)
+                return;
+
+            SerializedProperty sceneProp = owner.FindProperty(propertyPath);
+            if (sceneProp == null)
+                return;
+
+            UnityEditor.PopupWindow.Show(anchor.worldBound, new ScenePickerPopup(sceneProp.stringValue, entry => OnSceneSelected(propertyPath, owner, entry)));
+        }
+
+        private void OnSceneSelected(string propertyPath, SerializedObject owner, ScenePickerEntry scene)
+        {
+            if (string.IsNullOrWhiteSpace(propertyPath) || owner == null || scene == null)
+                return;
+
+            if (scene.IsMissing)
+            {
+                bool removeScene = EditorUtility.DisplayDialog(
+                    "Scene Missing",
+                    $"The scene entry '{scene.Name}' no longer exists in the project.\n\nDo you want to remove it from Build Settings?",
+                    "Remove Scene",
+                    "Keep It");
+
+                if (removeScene)
+                {
+                    RemoveSceneFromBuildSettings(scene);
+                }
+
+                return;
+            }
+
+            if (!scene.InBuildSettings)
+            {
+                bool addToBuild = EditorUtility.DisplayDialog(
+                    "Scene Not In Build Settings",
+                    $"The scene '{scene.Name}' is not in Build Settings.\n\nDo you want to add it now?",
+                    "Add Scene",
+                    "Cancel");
+
+                if (!addToBuild)
+                {
+                    return;
+                }
+
+                AddSceneToBuildSettings(scene);
+            }
+
+            owner.Update();
+            SerializedProperty property = owner.FindProperty(propertyPath);
+            if (property == null)
+                return;
+
+            property.stringValue = scene.Name;
+            owner.ApplyModifiedProperties();
+        }
+
+        private static void AddSceneToBuildSettings(ScenePickerEntry scene)
+        {
+            if (scene == null || string.IsNullOrWhiteSpace(scene.Path))
+                return;
+
+            EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes ?? Array.Empty<EditorBuildSettingsScene>();
+            var updatedScenes = new List<EditorBuildSettingsScene>(existingScenes)
+            {
+                new EditorBuildSettingsScene(scene.Path, true)
+            };
+
+            EditorBuildSettings.scenes = updatedScenes.ToArray();
+        }
+
+        private static void RemoveSceneFromBuildSettings(ScenePickerEntry scene)
+        {
+            if (scene == null || string.IsNullOrWhiteSpace(scene.Path))
+                return;
+
+            EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes ?? Array.Empty<EditorBuildSettingsScene>();
+            var updatedScenes = new List<EditorBuildSettingsScene>();
+
+            for (int i = 0; i < existingScenes.Length; i++)
+            {
+                EditorBuildSettingsScene buildScene = existingScenes[i];
+                if (buildScene == null || string.Equals(buildScene.path, scene.Path, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                updatedScenes.Add(buildScene);
+            }
+
+            EditorBuildSettings.scenes = updatedScenes.ToArray();
         }
     }
 }

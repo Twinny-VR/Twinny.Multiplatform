@@ -1,27 +1,26 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Packages/com.twinny.twe26/Editor/SetupGuide/Resources/SetupStyles.uss?fileID=7433441132597879392&amp;guid=995a15ceda468b54d964864c82f7d315&amp;type=3#SetupStyles"/>
     <Style src="project://database/Packages/com.twinny.multiplatform/Editor/SetupGuide/MultiplatformSetupSection.uss?fileID=7433441132597879392&amp;guid=b80329a296312114bb32bb9ebf498338&amp;type=3#MultiplatformSetupSection"/>
     <engine:VisualElement class="content-container multiplatform-content-container">
-        <Concept.UI.AspectElement class="multiplatform-hero" style="background-image: resource(&quot;Sprites/Banner&quot;); min-height: 100px;">
-            <engine:VisualElement class="multiplatform-hero-overlay" style="flex-grow: 1; justify-content: flex-end; align-items: flex-end; padding-top: 8px; padding-right: 8px; padding-bottom: 8px; padding-left: 8px;">
-                <engine:VisualElement style="align-items: flex-end; background-color: rgba(0, 0, 0, 0.34); border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-bottom-left-radius: 6px; padding-top: 4px; padding-right: 6px; padding-bottom: 4px; padding-left: 6px;">
-                    <engine:Label name="MultiplatformTitle" class="h1" style="position: relative; bottom: 0; right: 0; -unity-font-definition: url(&quot;project://database/Library/unity%20default%20resources?fileID=10102&amp;guid=0000000000000000e000000000000000&amp;type=0#LegacyRuntime&quot;); color: rgb(255, 246, 182); font-size: 16px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; -unity-text-align: lower-right; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;"/>
-                    <engine:Label name="MultiplatformVersion" text="Version" class="h1" style="position: relative; bottom: 0; right: 0; -unity-font-definition: url(&quot;project://database/Library/unity%20default%20resources?fileID=10102&amp;guid=0000000000000000e000000000000000&amp;type=0#LegacyRuntime&quot;); color: rgb(255, 255, 255); font-size: 12px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; -unity-text-align: lower-right; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; -unity-font-style: normal;"/>
-                    <engine:Button name="MultiplatformUpdateButton" text="Update" class="button" style="display: none; margin-top: 6px; align-self: flex-end; min-width: 92px;"/>
+        <Concept.UI.AspectElement class="multiplatform-hero">
+            <engine:VisualElement class="multiplatform-hero-overlay">
+                <engine:VisualElement class="multiplatform-hero-caption">
+                    <engine:Label name="MultiplatformTitle" class="h1 multiplatform-hero-title"/>
+                    <engine:Label name="MultiplatformVersion" text="Version" class="h1 multiplatform-hero-version"/>
+                    <engine:Button name="MultiplatformUpdateButton" text="Update" class="button multiplatform-update-button"/>
                 </engine:VisualElement>
             </engine:VisualElement>
         </Concept.UI.AspectElement>
-        <engine:VisualElement class="tab-navigation multiplatform-tab-nav">
-            <engine:Button name="RuntimeTabButton" text="Runtime" class="button active multiplatform-tab-button"/>
-            <engine:Button name="InputTabButton" text="Input" class="button multiplatform-tab-button"/>
+        <engine:VisualElement class="multiplatform-tab-nav">
+            <engine:Button name="RuntimeTabButton" text="Runtime" class="active multiplatform-tab-button"/>
+            <engine:Button name="InputTabButton" text="Input" class="multiplatform-tab-button"/>
         </engine:VisualElement>
         <engine:ScrollView class="global-config multiplatform-scroll">
             <engine:VisualElement name="RuntimeTabContent" class="smart-build multiplatform-card">
-                <engine:Label text="Runtime" class="h2 multiplatform-section-title"/>
+                <engine:Label text="RUNTIME SETTINGS" class="h2 multiplatform-section-title"/>
                 <engine:VisualElement name="RuntimeInspectorRoot" class="multiplatform-runtime-root"/>
             </engine:VisualElement>
             <engine:VisualElement name="InputTabContent" class="smart-build multiplatform-card" style="display: none;">
-                <engine:Label text="Input" class="h2 multiplatform-section-title"/>
+                <engine:Label text="INPUT SETTINGS" class="h2 multiplatform-section-title"/>
                 <engine:VisualElement name="InputInspectorRoot" class="multiplatform-runtime-root"/>
             </engine:VisualElement>
         </engine:ScrollView>

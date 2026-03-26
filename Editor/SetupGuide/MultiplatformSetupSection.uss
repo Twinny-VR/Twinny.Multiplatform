@@ -1,3 +1,19 @@
+:root {
+    --multi-hero-border: rgba(115, 158, 214, 0.18);
+    --multi-hero-caption-bg: rgba(0, 0, 0, 0.34);
+    --multi-hero-title-color: rgb(255, 246, 182);
+    --multi-hero-version-color: rgb(255, 255, 255);
+    --multi-tab-bg: rgb(20, 21, 22);
+    --multi-tab-bg-active: rgb(44, 45, 48);
+    --multi-tab-text: rgb(255, 255, 255);
+    --multi-tab-hover-text: rgb(0, 255, 0);
+    --multi-description-text: rgb(214, 220, 226);
+    --multi-tab-nav-bg: rgba(11, 14, 24, 0.9);
+    --multi-input-hint-bg: rgba(32, 38, 43, 0.65);
+    --multi-input-hint-border: rgb(202, 129, 19);
+    --multi-input-hint-text: rgb(231, 165, 73);
+}
+
 .multiplatform-content-container {
     flex-grow: 1;
 }
@@ -5,8 +21,77 @@
 .multiplatform-hero {
     width: 100%;
     height: 100px;
+    min-height: 100px;
     align-self: center;
     margin-bottom: 4px;
+    background-image: resource("Sprites/Banner");
+}
+
+.multiplatform-hero-overlay {
+    flex-grow: 1;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding-top: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    padding-left: 8px;
+}
+
+.multiplatform-hero-caption {
+    align-items: flex-end;
+    background-color: var(--multi-hero-caption-bg);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    padding-top: 4px;
+    padding-right: 6px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+}
+
+.multiplatform-hero-title {
+    position: relative;
+    bottom: 0;
+    right: 0;
+    -unity-font-definition: url("project://database/Library/unity%20default%20resources?fileID=10102&guid=0000000000000000e000000000000000&type=0#LegacyRuntime");
+    color: var(--multi-hero-title-color);
+    font-size: 16px;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    -unity-text-align: lower-right;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+}
+
+.multiplatform-hero-version {
+    position: relative;
+    bottom: 0;
+    right: 0;
+    -unity-font-definition: url("project://database/Library/unity%20default%20resources?fileID=10102&guid=0000000000000000e000000000000000&type=0#LegacyRuntime");
+    color: var(--multi-hero-version-color);
+    font-size: 12px;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    -unity-text-align: lower-right;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    -unity-font-style: normal;
+}
+
+.multiplatform-update-button {
+    display: none;
+    margin-top: 6px;
+    align-self: flex-end;
+    min-width: 92px;
 }
 
 .multiplatform-scroll {
@@ -15,11 +100,12 @@
 
 .multiplatform-section-title {
     margin-bottom: 8px;
+    -unity-font-style: bold;
 }
 
 .multiplatform-description {
     white-space: normal;
-    color: rgb(214, 220, 226);
+    color: var(--multi-description-text);
 }
 
 .multiplatform-card {
@@ -37,7 +123,7 @@
     padding-bottom: 6px;
     padding-left: 6px;
     align-items: center;
-    background-color: rgba(11, 14, 24, 0.9);
+    background-color: var(--multi-tab-nav-bg);
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
@@ -46,16 +132,18 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(115, 158, 214, 0.18);
-    border-right-color: rgba(115, 158, 214, 0.18);
-    border-bottom-color: rgba(115, 158, 214, 0.18);
-    border-left-color: rgba(115, 158, 214, 0.18);
+    border-top-color: var(--multi-hero-border);
+    border-right-color: var(--multi-hero-border);
+    border-bottom-color: var(--multi-hero-border);
+    border-left-color: var(--multi-hero-border);
     flex-direction: row;
     justify-content: flex-start;
+    align-self: stretch;
     margin-top: 4px;
 }
 
 .multiplatform-tab-button {
+    display: flex;
     flex-grow: 0;
     flex-shrink: 1;
     min-width: 100px;
@@ -65,26 +153,115 @@
     margin-right: 0;
     margin-bottom: 0;
     margin-left: 0;
-    padding-top: 8px;
-    padding-right: 14px;
-    padding-bottom: 8px;
-    padding-left: 14px;
-    background-color: rgba(255, 255, 255, 0.04);
-    color: rgb(197, 206, 220);
+    padding-top: 6px;
+    padding-right: 12px;
+    padding-bottom: 6px;
+    padding-left: 12px;
+    background-color: var(--multi-tab-bg);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
     -unity-text-align: middle-center;
-    align-self: stretch;
+    align-self: center;
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+#RuntimeTabButton,
+#InputTabButton,
+.multiplatform-tab-button {
+    color: var(--multi-tab-text);
+}
+
+#RuntimeTabButton .unity-text-element,
+#InputTabButton .unity-text-element,
+#RuntimeTabButton .unity-button__text,
+#InputTabButton .unity-button__text,
+.multiplatform-tab-button .unity-text-element,
+.multiplatform-tab-button .unity-button__text {
+    color: var(--multi-tab-text);
+    font-size: 14px;
+    -unity-font-style: bold;
 }
 
 .multiplatform-runtime-root {
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .multiplatform-runtime-field {
+    margin-bottom: 2px;
+}
+
+.multiplatform-input-field-group {
     margin-bottom: 4px;
+}
+
+.multiplatform-input-hint-box {
+    margin-top: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    background-color: var(--multi-input-hint-bg);
+    border-left-width: 2px;
+    border-left-color: var(--multi-input-hint-border);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.multiplatform-input-hint {
+    font-size: 11px;
+    color: var(--multi-input-hint-text);
+    white-space: normal;
+}
+
+.multiplatform-scene-picker-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.multiplatform-scene-picker-label {
+    min-width: 140px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.multiplatform-scene-picker-values {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.multiplatform-scene-picker-text-field {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.multiplatform-scene-picker-button {
+    width: 28px;
+    min-width: 28px;
+    height: 20px;
+    min-height: 20px;
+    max-height: 20px;
+    flex-shrink: 0;
+    align-self: center;
+    margin-left: 6px;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    -unity-text-align: middle-center;
 }
 
 #RuntimeTabButton {
@@ -94,25 +271,54 @@
 .multiplatform-tab-button.active {
     flex-grow: 0;
     flex-shrink: 0;
-    background-color: rgb(52, 73, 112);
-    color: rgb(255, 255, 255);
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-top-color: rgba(171, 210, 255, 0.55);
-    border-right-color: rgba(171, 210, 255, 0.55);
-    border-bottom-color: rgba(171, 210, 255, 0.55);
-    border-left-color: rgba(171, 210, 255, 0.55);
+    background-color: var(--multi-tab-bg-active);
 }
 
-.multiplatform-tab-button:enabled:hover {
-    background-color: rgba(76, 104, 149, 0.35);
-    color: rgb(255, 255, 255);
+#RuntimeTabButton.active,
+#InputTabButton.active,
+.multiplatform-tab-button.active {
+    color: var(--multi-tab-text);
 }
 
-.multiplatform-tab-button.active:enabled:hover {
-    background-color: rgb(63, 87, 133);
+#RuntimeTabButton.active .unity-text-element,
+#InputTabButton.active .unity-text-element,
+#RuntimeTabButton.active .unity-button__text,
+#InputTabButton.active .unity-button__text,
+.multiplatform-tab-button.active .unity-text-element,
+.multiplatform-tab-button.active .unity-button__text {
+    color: var(--multi-tab-text);
+}
+
+#RuntimeTabButton:hover,
+#InputTabButton:hover,
+.multiplatform-tab-button:hover {
+    background-color: var(--multi-tab-bg);
+    color: var(--multi-tab-hover-text);
+}
+
+#RuntimeTabButton:hover .unity-text-element,
+#InputTabButton:hover .unity-text-element,
+#RuntimeTabButton:hover .unity-button__text,
+#InputTabButton:hover .unity-button__text,
+.multiplatform-tab-button:hover .unity-text-element,
+.multiplatform-tab-button:hover .unity-button__text {
+    color: var(--multi-tab-hover-text);
+}
+
+#RuntimeTabButton.active:hover,
+#InputTabButton.active:hover,
+.multiplatform-tab-button.active:hover {
+    background-color: var(--multi-tab-bg-active);
+    color: var(--multi-tab-text);
+}
+
+#RuntimeTabButton.active:hover .unity-text-element,
+#InputTabButton.active:hover .unity-text-element,
+#RuntimeTabButton.active:hover .unity-button__text,
+#InputTabButton.active:hover .unity-button__text,
+.multiplatform-tab-button.active:hover .unity-text-element,
+.multiplatform-tab-button.active:hover .unity-button__text {
+    color: var(--multi-tab-text);
 }
 
 #RuntimeTabButton,

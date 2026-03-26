@@ -44,9 +44,18 @@ namespace Twinny.Editor
     public partial class MultiplatformSetupSection : VisualElement, IModuleSetup
     {
         private const string UxmlAssetPath = "Packages/com.twinny.multiplatform/Editor/SetupGuide/MultiplatformSetupSection.uxml";
-        private const string UssAssetPath = "Packages/com.twinny.multiplatform/Editor/SetupGuide/MultiplatformSetupSection.uss";
         private const string InputSettingsAssetPath = "Assets/Resources/InputSettings.asset";
         private const string PackageRootPath = "Packages/com.twinny.multiplatform";
+        private static readonly Dictionary<string, string> InputPropertyHints = new()
+        {
+            { "_dragThreshold", "Minimum movement before a touch is treated as a drag instead of a tap." },
+            { "_longPressTime", "How long the user must hold one finger before a long press is triggered." },
+            { "_edgeThreshold", "Screen-edge margin used to detect gestures that begin near the device borders." },
+            { "_shakeThreshold", "Acceleration required for the device movement to count as a shake gesture." },
+            { "_twoFingerLongPressTime", "How long two fingers must stay pressed before a two-finger hold is recognized." },
+            { "_pickupAccelerationThreshold", "Acceleration needed to detect that the device has been picked up." },
+            { "_putDownStableTime", "How long the device must stay stable before it is considered placed down." }
+        };
         private readonly Label _title;
         private readonly Label _versionLabel;
         private readonly Button _updateButton;
@@ -63,10 +72,6 @@ namespace Twinny.Editor
         public MultiplatformSetupSection()
         {
             VisualTreeAsset visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlAssetPath);
-            StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(UssAssetPath);
-
-            if (styleSheet != null)
-                styleSheets.Add(styleSheet);
 
             if (visualTree != null)
             {
@@ -181,10 +186,7 @@ namespace Twinny.Editor
                 if (iterator.name == "m_Script")
                     continue;
 
-                PropertyField field = new PropertyField(iterator.Copy());
-                field.Bind(_inputSerializedObject);
-                field.AddToClassList("multiplatform-runtime-field");
-                _inputInspectorRoot.Add(field);
+                AddInputField(_inputInspectorRoot, iterator.Copy(), _inputSerializedObject);
             }
         }
 
@@ -219,15 +221,11 @@ namespace Twinny.Editor
             var row = new VisualElement();
             row.AddToClassList("row");
             row.AddToClassList("multiplatform-runtime-field");
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.justifyContent = Justify.SpaceBetween;
+            row.AddToClassList("multiplatform-scene-picker-row");
 
             var label = new Label(labelText);
             label.AddToClassList("row-label");
-            label.style.minWidth = 140f;
-            label.style.marginRight = 8f;
-            label.style.flexShrink = 0f;
+            label.AddToClassList("multiplatform-scene-picker-label");
             row.Add(label);
 
             var field = new TextField
@@ -235,47 +233,62 @@ namespace Twinny.Editor
                 value = sceneProp.stringValue
             };
             field.AddToClassList("row-field");
-            field.style.flexGrow = 1f;
-            field.style.flexShrink = 1f;
-            field.style.minWidth = 0f;
+            field.AddToClassList("multiplatform-scene-picker-text-field");
             field.BindProperty(sceneProp);
 
             var values = new VisualElement();
             values.AddToClassList("inline-values");
-            values.style.flexDirection = FlexDirection.Row;
-            values.style.alignItems = Align.Center;
-            values.style.flexGrow = 1f;
-            values.style.flexShrink = 1f;
-            values.style.minWidth = 0f;
+            values.AddToClassList("multiplatform-scene-picker-values");
             values.Add(field);
 
             var searchButton = new Button
             {
                 text = string.Empty
             };
+            searchButton.AddToClassList("multiplatform-scene-picker-button");
             searchButton.tooltip = "Search Scene";
             searchButton.clicked += () => ShowScenePicker(searchButton, sceneProp.propertyPath, owner);
-            searchButton.style.width = 28f;
-            searchButton.style.minWidth = 28f;
-            searchButton.style.unityTextAlign = TextAnchor.MiddleCenter;
 
             Texture searchIcon = EditorGUIUtility.IconContent("Search Icon").image;
             if (searchIcon is Texture2D searchTexture)
             {
-                searchButton.style.backgroundImage = new StyleBackground(searchTexture);
-                searchButton.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
-                searchButton.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
-                searchButton.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
-                searchButton.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+                searchButton.iconImage = searchTexture;
             }
             else
             {
-                searchButton.text = "Q";
+                searchButton.text = "?";
             }
 
             values.Add(searchButton);
             row.Add(values);
             container.Add(row);
+        }
+
+        private void AddInputField(VisualElement container, SerializedProperty property, SerializedObject owner)
+        {
+            if (container == null || property == null || owner == null)
+                return;
+
+            var fieldGroup = new VisualElement();
+            fieldGroup.AddToClassList("multiplatform-input-field-group");
+
+            var field = new PropertyField(property);
+            field.Bind(owner);
+            field.AddToClassList("multiplatform-runtime-field");
+            fieldGroup.Add(field);
+
+            if (InputPropertyHints.TryGetValue(property.name, out string hintText))
+            {
+                var hintBox = new VisualElement();
+                hintBox.AddToClassList("multiplatform-input-hint-box");
+
+                var hintLabel = new Label(hintText);
+                hintLabel.AddToClassList("multiplatform-input-hint");
+                hintBox.Add(hintLabel);
+                fieldGroup.Add(hintBox);
+            }
+
+            container.Add(fieldGroup);
         }
 
         private void ShowScenePicker(Button anchor, string propertyPath, SerializedObject owner)

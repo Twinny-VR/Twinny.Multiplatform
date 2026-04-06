@@ -19,13 +19,11 @@ namespace Twinny.Multiplatform
         }
         public void Update()
         {
-            throw new NotImplementedException();
         }
 
 
         public void Exit()
         {
-            throw new NotImplementedException();
         }
 
         private async void Initialize()

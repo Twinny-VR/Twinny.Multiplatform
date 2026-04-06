@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || UNITY_WEBGL
+#if UNITY_EDITOR || UNITY_WEBGL || UNITY_STANDALONE_WIN
 using Concept.Core;
 using Twinny.Core.Input;
 using UnityEngine;

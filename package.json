@@ -1,7 +1,7 @@
 {
   "name": "com.twinny.multiplatform",
   "displayName": "Twinny Multiplatform",
-  "version": "26.0.26",
+  "version": "26.0.27",
   "type": "tool",
   "unity": "6000.0",
   "unityRelease": "43f1",

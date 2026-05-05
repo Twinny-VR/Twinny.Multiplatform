@@ -33,6 +33,7 @@ namespace Twinny.Multiplatform.Interactables
     public class Building : MonoBehaviour, IPlatformCallbacks
     {
         [SerializeField] private BuildingFloorEntry[] _floors;
+        [SerializeField] private bool _filterVisibilityBySelectedFloor = true;
         [SerializeField] private bool _showAllFloorsWhenUnselected = true;
 
         public BuildingFloorEntry[] Floors => _floors;
@@ -98,11 +99,17 @@ namespace Twinny.Multiplatform.Interactables
 
         public void OnFloorSelected(Floor floor)
         {
+            if (!_filterVisibilityBySelectedFloor)
+                return;
+
             ShowFloorsAtOrAbove(floor);
         }
 
         public void OnFloorUnselected(Floor floor)
         {
+            if (!_filterVisibilityBySelectedFloor)
+                return;
+
             if (_showAllFloorsWhenUnselected && GetFloorIndex(floor) >= 0)
                 ShowAllFloors();
         }

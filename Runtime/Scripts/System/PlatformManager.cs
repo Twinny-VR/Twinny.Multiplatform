@@ -252,6 +252,8 @@ namespace Twinny.Multiplatform
 
         public async void OnStartExperienceRequested(string sceneName = "")
         {
+            if(!Application.isPlaying)
+                return;
             if (string.IsNullOrEmpty(sceneName)) sceneName = PlatformRuntime.GetDefaultSceneName();
             await StartExperienceSequenceAsync(sceneName);
         }

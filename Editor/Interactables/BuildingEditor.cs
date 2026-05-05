@@ -82,6 +82,7 @@ namespace Twinny.Multiplatform.Editor.Interactables
         {
             if (container == null) return;
             AddProperty(container, serializedObject.FindProperty("_floors"), serializedObject);
+            AddProperty(container, serializedObject.FindProperty("_filterVisibilityBySelectedFloor"), serializedObject);
             AddProperty(container, serializedObject.FindProperty("_showAllFloorsWhenUnselected"), serializedObject);
         }
 

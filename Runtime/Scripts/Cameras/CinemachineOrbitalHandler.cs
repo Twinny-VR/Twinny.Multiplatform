@@ -1051,6 +1051,17 @@ namespace Twinny.Multiplatform.Cameras
                 return;
             }
 
+            // Allow instant "hard cut" transitions when speed is zero.
+            if (_floorTargetTransitionSpeed <= 0f)
+            {
+                panTarget.position = _targetPanPosition;
+                _isFloorTargetTransitioning = false;
+                _floorTargetTransitionVelocity = Vector3.zero;
+                SetDeoccluderEnabledForFloorTransition(true);
+                ResetDemoModeForFloorTransition();
+                return;
+            }
+
             float remainingDistance = Vector3.Distance(panTarget.position, _targetPanPosition);
             float totalDistance = Vector3.Distance(_floorTargetStartPosition, _targetPanPosition);
             float distanceRatio = totalDistance <= 0.0001f

@@ -128,6 +128,12 @@ namespace Twinny.Multiplatform.Editor.Camera
             AddSlider(container, "_radiusTransitionSpeed", 0f, 80f, "Radius Transition Speed");
             AddSlider(container, "_radiusEaseOutDistance", 0f, 10f, "Radius Ease-Out Dist");
             AddSlider(container, "_radiusEaseOutSmoothTime", 0.01f, 1f, "Radius Ease-Out Time");
+            AddSlider(container, "_floorTargetTransitionSpeed", 0f, 80f, "Target Transition Speed");
+            AddSlider(container, "_floorTargetLongDistance", 0f, 100f, "Target Long Distance");
+            AddSlider(container, "_floorTargetMaxSpeedMultiplier", 1f, 10f, "Target Max Speed Mult");
+            AddSlider(container, "_floorTargetEaseOutDistance", 0f, 20f, "Target Ease-Out Dist");
+            AddSlider(container, "_floorTargetEaseOutSmoothTime", 0.01f, 1f, "Target Ease-Out Time");
+            AddSlider(container, "_floorTargetTransitionEpsilon", 0.0001f, 0.1f, "Target Epsilon");
             AddSlider(container, "_hardLookRestoreDelay", 0f, 0.5f, "HardLook Restore Delay");
 
             AddProperty(container, serializedObject.FindProperty("_returnTrackingTargetToOriginOnRelease"), serializedObject);

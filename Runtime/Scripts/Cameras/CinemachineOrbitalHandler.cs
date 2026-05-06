@@ -891,7 +891,17 @@ namespace Twinny.Multiplatform.Cameras
             _floorTargetStartPosition = panTarget.position;
             _targetPanPosition = floor.TargetPosition;
             _floorTargetTransitionVelocity = Vector3.zero;
-            _isFloorTargetTransitioning = true;
+            if (_floorTargetTransitionSpeed <= 0f)
+            {
+                panTarget.position = _targetPanPosition;
+                _isFloorTargetTransitioning = false;
+                SetDeoccluderEnabledForFloorTransition(true);
+                ResetDemoModeForFloorTransition();
+            }
+            else
+            {
+                _isFloorTargetTransitioning = true;
+            }
             _notifyPoiFocusedOnTransitionComplete = true;
 
             _panOriginPosition = _targetPanPosition;
@@ -1068,11 +1078,15 @@ namespace Twinny.Multiplatform.Cameras
                 ? 1f
                 : Mathf.Clamp01(totalDistance / Mathf.Max(_floorTargetLongDistance, 0.0001f));
             float speedMultiplier = Mathf.Lerp(1f, Mathf.Max(1f, _floorTargetMaxSpeedMultiplier), distanceRatio);
+            float baseSpeed = Mathf.Max(_floorTargetTransitionSpeed, 0f) * speedMultiplier;
+            float step = baseSpeed * Time.deltaTime;
 
             if (remainingDistance <= Mathf.Max(_floorTargetEaseOutDistance, _floorTargetTransitionEpsilon))
             {
-                float smoothTime = Mathf.Max(0.01f, _floorTargetEaseOutSmoothTime);
-                panTarget.position = Vector3.SmoothDamp(
+                // Keep ease-out, but make speed still influence close-range responsiveness.
+                float speedFactor = Mathf.Max(0.01f, _floorTargetTransitionSpeed);
+                float smoothTime = Mathf.Max(0.01f, _floorTargetEaseOutSmoothTime / speedFactor);
+                Vector3 smoothPos = Vector3.SmoothDamp(
                     panTarget.position,
                     _targetPanPosition,
                     ref _floorTargetTransitionVelocity,
@@ -1080,10 +1094,12 @@ namespace Twinny.Multiplatform.Cameras
                     Mathf.Infinity,
                     Time.deltaTime
                 );
+                Vector3 linearPos = Vector3.MoveTowards(panTarget.position, _targetPanPosition, step);
+                float easeBlend = Mathf.Clamp01(remainingDistance / Mathf.Max(_floorTargetEaseOutDistance, _floorTargetTransitionEpsilon));
+                panTarget.position = Vector3.Lerp(smoothPos, linearPos, easeBlend);
             }
             else
             {
-                float step = Mathf.Max(_floorTargetTransitionSpeed * speedMultiplier, 0f) * Time.deltaTime;
                 panTarget.position = Vector3.MoveTowards(panTarget.position, _targetPanPosition, step);
                 _floorTargetTransitionVelocity = Vector3.zero;
             }

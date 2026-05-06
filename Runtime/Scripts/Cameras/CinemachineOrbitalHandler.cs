@@ -119,6 +119,7 @@ namespace Twinny.Multiplatform.Cameras
         private Transform _activeTrackingTarget;
         private CinemachineTracker _trackingTargetPoi;
         private bool _notifyPoiFocusedOnTransitionComplete;
+        private bool _resetPanLimitWhenTransitionCompletes;
         private CinemachineDemoMode _demoMode;
         private bool _suppressTrackingTargetPoiOverrides;
 
@@ -1109,6 +1110,11 @@ namespace Twinny.Multiplatform.Cameras
                 panTarget.position = _targetPanPosition;
                 _isFloorTargetTransitioning = false;
                 _floorTargetTransitionVelocity = Vector3.zero;
+                if (_resetPanLimitWhenTransitionCompletes)
+                {
+                    InitializePanLimitForTarget(panTarget, true);
+                    _resetPanLimitWhenTransitionCompletes = false;
+                }
                 SetDeoccluderEnabledForFloorTransition(true);
                 ResetDemoModeForFloorTransition();
             }
@@ -1324,8 +1330,24 @@ namespace Twinny.Multiplatform.Cameras
             if (trackingTarget == null)
                 return;
 
-            trackingTarget.position = landmark.position;
-            InitializePanLimitForTarget(trackingTarget, true);
+            _floorTargetStartPosition = trackingTarget.position;
+            _targetPanPosition = landmark.position;
+            _floorTargetTransitionVelocity = Vector3.zero;
+            _resetPanLimitWhenTransitionCompletes = true;
+
+            if (_floorTargetTransitionSpeed <= 0f)
+            {
+                trackingTarget.position = _targetPanPosition;
+                InitializePanLimitForTarget(trackingTarget, true);
+                _isFloorTargetTransitioning = false;
+                _floorTargetTransitionVelocity = Vector3.zero;
+                _resetPanLimitWhenTransitionCompletes = false;
+            }
+            else
+            {
+                _isFloorTargetTransitioning = true;
+            }
+
             PlatformManager.ClearPendingLandmarkGuid();
         }
     }

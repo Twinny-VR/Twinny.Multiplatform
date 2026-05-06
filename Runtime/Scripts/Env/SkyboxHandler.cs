@@ -9,7 +9,7 @@ namespace Twinny.Multiplatform.Env
     public static class SkyboxHandler
     {
         private const string m_defaultPropertyName = "_blendFactor";
-        private const float m_defaultDurationSeconds = 1f;
+        private const float m_defaultDurationSeconds = .5f;
 
         private static SkyboxHandlerRunner _runner;
         private static bool _hasOriginal;

@@ -2,6 +2,7 @@ using Concept.Core;
 using System.Threading.Tasks;
 using Twinny.Core;
 using Twinny.Multiplatform.Interactables;
+using Twinny.Navigation;
 using Twinny.UI;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -197,7 +198,7 @@ namespace Twinny.Multiplatform
             if (data == null || string.IsNullOrWhiteSpace(data.ImmersionSceneName))
                 return;
 
-            SyncPendingLandmarkGuid(data);
+            SyncPendingRequestData(data);
 
             CallbackHub.CallAction<IPlatformUICallbacks>(callback =>
             {
@@ -228,7 +229,7 @@ namespace Twinny.Multiplatform
             if (!WebGLGyroAPI.IsInitialized)
                 WebGLGyroAPI.RequestGyroPermission();
 #endif
-            SyncPendingLandmarkGuid(data);
+            SyncPendingRequestData(data);
             string sceneName = data?.ImmersionSceneName ?? string.Empty;
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
@@ -241,7 +242,7 @@ namespace Twinny.Multiplatform
 
         public async void OnMockupRequested(FloorData data = null)
         {
-            SyncPendingLandmarkGuid(data);
+            SyncPendingRequestData(data);
             string sceneName = data?.ImmersionSceneName ?? string.Empty;
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
@@ -285,12 +286,21 @@ namespace Twinny.Multiplatform
             return !string.IsNullOrWhiteSpace(landmarkGuid);
         }
 
-        private static void SyncPendingLandmarkGuid(FloorData data)
+        private static void SyncPendingRequestData(FloorData data)
         {
             if (data == null)
                 return;
 
             SetPendingLandmarkGuid(data.UseLandMark ? data.LandmarkGuid : string.Empty);
+
+            if (!data.UseLandMark)
+                return;
+
+            if (!LandmarkHub.TryGetByLandmarkGuid(data.LandmarkGuid, out Landmark landmark) || landmark == null)
+                return;
+
+            if (landmark.skyBoxMaterial != null)
+                TwinnyManager.SetHDRI(landmark.skyBoxMaterial);
         }
 
         private static async Task LoadSceneWithProgressAsync(string sceneName, LoadSceneMode mode)
@@ -372,4 +382,3 @@ namespace Twinny.Multiplatform
         }
     }
 }
-

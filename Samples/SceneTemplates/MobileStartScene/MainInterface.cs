@@ -5,6 +5,7 @@ using Twinny.Core.Input;
 using Twinny.Multiplatform.Cameras;
 using Twinny.Multiplatform.Interactables;
 using Twinny.Multiplatform.Navigation;
+using Twinny.Navigation;
 using Twinny.Shaders;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -725,6 +726,8 @@ namespace Twinny.Multiplatform.Samples
             SyncLevelSelectorWithLoadedScene(scene.name);
             ApplyModeButtons();
         }
+        public void OnRequestLandMark(string landmarkGuid) { }
+        public void OnRequestLandMark(Landmark landmark) { }
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
 

@@ -144,6 +144,8 @@ namespace Twinny.Multiplatform.Navigation
         public void OnExperienceLoaded() { }
         public void OnSceneLoadStart(string sceneName) { }
         public void OnSceneLoaded(Scene scene) { }
+        public void OnRequestLandMark(string landmarkGuid) { TeleportToLandmark(LandmarkHub.GetByLandmarkGuid(landmarkGuid)); }
+        public void OnRequestLandMark(Landmark landmark) { TeleportToLandmark(landmark); }
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
 

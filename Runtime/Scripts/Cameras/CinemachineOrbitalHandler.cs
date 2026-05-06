@@ -296,6 +296,8 @@ namespace Twinny.Multiplatform.Cameras
         public void OnExperienceLoaded() { }
         public void OnSceneLoadStart(string sceneName) { }
         public void OnSceneLoaded(Scene scene) { }
+        public void OnRequestLandMark(string landmarkGuid) { }
+        public void OnRequestLandMark(Landmark landmark) { }
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
 

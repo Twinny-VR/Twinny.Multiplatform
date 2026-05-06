@@ -1,6 +1,7 @@
 using Concept.Core;
 using System.Collections.Generic;
 using Twinny.Multiplatform.Interactables;
+using Twinny.Navigation;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -85,6 +86,8 @@ namespace Twinny.Multiplatform
         public void OnExperienceEnded(bool isRunning) => TriggerAction(PlatformAction.ActionType.ExperienceEnded);
         public void OnSceneLoadStart(string sceneName) => TriggerAction(PlatformAction.ActionType.SceneLoadStart);
         public void OnSceneLoaded(Scene scene) => TriggerAction(PlatformAction.ActionType.SceneLoaded);
+        public void OnRequestLandMark(string landmarkGuid) { }
+        public void OnRequestLandMark(Landmark landmark) { }
         public void OnTeleportToLandMark(int landMarkIndex) => TriggerAction(PlatformAction.ActionType.TeleportToLandMark);
         public void OnSkyboxHDRIChanged(Material material) => TriggerAction(PlatformAction.ActionType.SkyboxHDRIChanged);
 

@@ -1,6 +1,7 @@
 using Concept.Core;
 using System.Collections.Generic;
 using Twinny.Multiplatform.Interactables;
+using Twinny.Navigation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -221,6 +222,8 @@ namespace Twinny.Multiplatform.Samples
         public void OnExperienceEnded(bool isRunning) { }
         public void OnSceneLoadStart(string sceneName) { }
         public void OnSceneLoaded(Scene scene) { }
+        public void OnRequestLandMark(string landmarkGuid) { }
+        public void OnRequestLandMark(Landmark landmark) { }
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
         public void OnEnterImmersiveMode() { }

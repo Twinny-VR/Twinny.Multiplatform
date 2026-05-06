@@ -1,6 +1,7 @@
 using System;
 using Concept.Core;
 using Twinny.Multiplatform;
+using Twinny.Navigation;
 using UnityEngine;
 
 namespace Twinny.Multiplatform.Interactables
@@ -123,6 +124,8 @@ namespace Twinny.Multiplatform.Interactables
         public void OnExperienceEnded(bool isRunning) { }
         public void OnSceneLoadStart(string sceneName) { }
         public void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene) { }
+        public void OnRequestLandMark(string landmarkGuid) { }
+        public void OnRequestLandMark(Landmark landmark) { }
         public void OnTeleportToLandMark(int landMarkIndex) { }
         public void OnSkyboxHDRIChanged(Material material) { }
         public void OnStartInteract(GameObject gameObject) { }

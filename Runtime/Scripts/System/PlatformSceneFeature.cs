@@ -2,6 +2,7 @@ using System.Runtime.Serialization;
 using Concept.Core;
 using Twinny.Core;
 using Twinny.Multiplatform.Interactables;
+using Twinny.Navigation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -86,6 +87,16 @@ namespace Twinny.Multiplatform
         }
 
         public void OnSceneLoadStart(string sceneName)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void OnRequestLandMark(string landmarkGuid)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void OnRequestLandMark(Landmark landmark)
         {
             throw new System.NotImplementedException();
         }

@@ -538,13 +538,21 @@ namespace Twinny.Multiplatform.Input
                 {
                     float totalZoom = Mathf.Abs(currentDist - _startPinchDist);
                     float totalPan = (centerPos - _startPanCenter).magnitude;
+                    float frameZoom = Mathf.Abs(currentDist - _lastPinchDist);
+                    float framePan = centerDelta.magnitude;
                     float threshold = _settings.DragThreshold;
+                    float zoomBias = 1.75f;
+#if UNITY_WEBGL && !UNITY_EDITOR
+                    // Mobile WebGL tends to report noisier center movement while pinching.
+                    // Reduce pan bias here so pinch reliably classifies as zoom.
+                    zoomBias = 1.05f;
+#endif
 
                     if (totalZoom > threshold || totalPan > threshold)
                     {
-                        // Bias towards panning: Zoom must be significantly stronger than pan to take precedence
-                        // because it's hard to drag two fingers without slightly changing distance.
-                        if (totalZoom > totalPan * 1.75f) _isZooming = true;
+                        // Prefer the most dominant signal (distance delta vs center translation).
+                        bool zoomDominant = totalZoom > totalPan * zoomBias || frameZoom > framePan * zoomBias;
+                        if (zoomDominant) _isZooming = true;
                         else
                         {
                             _isPanning = true;

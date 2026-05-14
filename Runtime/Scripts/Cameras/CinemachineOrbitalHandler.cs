@@ -198,8 +198,13 @@ namespace Twinny.Multiplatform.Cameras
 
             if (selection.Target == null) return;
 
-            CinemachineFloor floor = selection.Target.GetComponentInParent<CinemachineFloor>();
-            if (floor == null) return;
+            CinemachineFloor floor = selection.Target.GetComponent<CinemachineFloor>();
+            if (floor == null)
+            {
+                floor = selection.Target.GetComponentInParent<CinemachineFloor>();
+                if (floor == null) return;
+                if (!floor.CanSelectByChild && selection.Target != floor.gameObject) return;
+            }
 
             floor.Select();
         }

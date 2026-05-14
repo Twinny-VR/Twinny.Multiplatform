@@ -54,6 +54,8 @@ namespace Twinny.Multiplatform.Interactables
 
         [SerializeField] private bool _showHint = true;
         public bool ShowHint => _showHint;
+        [SerializeField] private bool _canSelectByChild = true;
+        public bool CanSelectByChild => _canSelectByChild;
 
 
         [Header("Events")]

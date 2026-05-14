@@ -578,8 +578,15 @@ namespace Twinny.Multiplatform.Cameras
             }
 
             float next = radius - delta * _zoomSpeed;
+            float clamped = Mathf.Clamp(next, _radiusLimits.x, _radiusLimits.y);
+
+            // Keep manual pinch zoom as the authoritative radius target to prevent
+            // snap-back to stale transition targets after gesture release.
             _isRadiusTransitioning = false;
-            SetRadius(Mathf.Clamp(next, _radiusLimits.x, _radiusLimits.y));
+            _radiusTransitionVelocity = 0f;
+            _deferRadiusClampUntilFloorRadiusSettles = false;
+            _targetRadius = clamped;
+            SetRadius(clamped);
             // Test mode: keep HardLook suspended after floor transition.
         }
 

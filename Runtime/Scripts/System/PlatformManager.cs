@@ -234,6 +234,7 @@ namespace Twinny.Multiplatform
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
             StateMachine.ChangeState(new ImmersiveState(this));
+            NotifyLandmarkRequest(data);
             await CanvasTransition.FadeScreenAsync(false,1f, renderMode:RenderMode.ScreenSpaceOverlay);
 
         }
@@ -247,6 +248,7 @@ namespace Twinny.Multiplatform
             await CanvasTransition.FadeScreenAsync(true,1f,renderMode:RenderMode.ScreenSpaceOverlay);
             await EnsureSceneLoadedAsync(sceneName);
             StateMachine.ChangeState(new MockupState(this));
+            NotifyLandmarkRequest(data);
             await CanvasTransition.FadeScreenAsync(false,1f,renderMode:RenderMode.ScreenSpaceOverlay);
 
         }
@@ -301,6 +303,14 @@ namespace Twinny.Multiplatform
 
             if (landmark.skyBoxMaterial != null)
                 TwinnyManager.SetHDRI(landmark.skyBoxMaterial);
+        }
+
+        private static void NotifyLandmarkRequest(FloorData data)
+        {
+            if (data == null || !data.UseLandMark || string.IsNullOrWhiteSpace(data.LandmarkGuid))
+                return;
+
+            CallbackHub.CallAction<IPlatformCallbacks>(callback => callback.OnRequestLandMark(data.LandmarkGuid));
         }
 
         private static async Task LoadSceneWithProgressAsync(string sceneName, LoadSceneMode mode)

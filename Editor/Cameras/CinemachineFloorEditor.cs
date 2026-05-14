@@ -98,11 +98,13 @@ namespace Twinny.Multiplatform.Editor.Cameras
             SerializedProperty landmarkGuidProp = dataProp.FindPropertyRelative("<LandmarkGuid>k__BackingField");
             SerializedProperty requestOnSelectProp = serializedObject.FindProperty("_requestOnSelect");
             SerializedProperty showHintProp = serializedObject.FindProperty("_showHint");
+            SerializedProperty canSelectByChildProp = serializedObject.FindProperty("_canSelectByChild");
 
             AddProperty(container, titleProp, serializedObject);
             AddProperty(container, subtitleProp, serializedObject);
             AddScenePickerField(container, immersionSceneProp, "Immersion Scene Name");
             AddProperty(container, showHintProp, serializedObject);
+            AddProperty(container, canSelectByChildProp, serializedObject);
 
             PropertyField requestOnSelectField = null;
             if (requestOnSelectProp != null)

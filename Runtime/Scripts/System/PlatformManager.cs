@@ -235,6 +235,7 @@ namespace Twinny.Multiplatform
             await EnsureSceneLoadedAsync(sceneName);
             StateMachine.ChangeState(new ImmersiveState(this));
             NotifyLandmarkRequest(data);
+            
             await CanvasTransition.FadeScreenAsync(false,1f, renderMode:RenderMode.ScreenSpaceOverlay);
 
         }
